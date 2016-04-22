@@ -32,7 +32,6 @@
     (defined(GL_VERSION_ES_CM_1_1) && GL_VERSION_ES_CM_1_1 > 0)
 
     #define OPENGLES_1_1_FOUND 1
-
 #endif
 
 #ifndef GL_SAMPLER_2D_ARRAY_EXT
@@ -189,6 +188,10 @@ typedef char GLchar;
 #define GL_TRIANGLE_STRIP_ADJACENCY_EXT         0x000D
 #endif
 
+#ifndef GL_VERSION_3_0
+#define GL_MAX_VARYING_COMPONENTS                0x8B4B
+#endif
+
 #ifndef GL_VERSION_3_2
 #define GL_GEOMETRY_SHADER                       0x8DD9
 #define GL_GEOMETRY_VERTICES_OUT                 0x8916
@@ -197,7 +200,6 @@ typedef char GLchar;
 #define GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS      0x8C29
 #define GL_MAX_GEOMETRY_VARYING_COMPONENTS       0x8DDD
 #define GL_MAX_VERTEX_VARYING_COMPONENTS         0x8DDE
-#define GL_MAX_VARYING_COMPONENTS                0x8B4B
 #define GL_MAX_GEOMETRY_UNIFORM_COMPONENTS       0x8DDF
 #define GL_MAX_GEOMETRY_OUTPUT_VERTICES          0x8DE0
 #define GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS  0x8DE1
@@ -488,6 +490,15 @@ typedef char GLchar;
 #define GL_COMPUTE_SHADER_BIT             0x00000020
 #endif
 
+#ifndef GL_ARB_clip_control
+#define GL_LOWER_LEFT 0x8CA1
+#define GL_UPPER_LEFT 0x8CA2
+#define GL_CLIP_ORIGIN 0x935C
+#define GL_CLIP_DEPTH_MODE 0x935D
+#define GL_NEGATIVE_ONE_TO_ONE 0x935E
+#define GL_ZERO_TO_ONE 0x935F
+#endif
+
 #ifndef GL_ARB_depth_clamp
 #define GL_DEPTH_CLAMP                    0x864F
 #endif
@@ -589,25 +600,40 @@ typedef char GLchar;
 #define GL_RASTERIZER_DISCARD           0x8C89
 #endif
 
-#ifndef GL_VERSION_3_2
-typedef struct __GLsync *GLsync;
+#ifndef GL_ALPHA_TEST
+    #define GL_ALPHA_TEST 0x0BC0
 #endif
 
-// for compatibility with gl.h headers that don't support VBO,
-//GL_VERSION_1_5 and GL_ARB_vertex_buffer_object provide these types for OpenGL
-//all ES versions except GL_OES_VERSION_1_0 provide these types for OpenGL ES
-#if !defined(GL_VERSION_1_5) && !defined(GL_ARB_vertex_buffer_object) \
-  && !defined(GL_ES_VERSION_2_0) && !defined(OPENGLES_1_1_FOUND)
-    #if defined(_WIN64)
-        typedef __int64 GLintptr;
-        typedef __int64 GLsizeiptr;
-    #elif defined(__ia64__) || defined(__x86_64__) || defined(__ANDROID__)
-        typedef long int GLintptr;
-        typedef long int GLsizeiptr;
-    #else
-        typedef int GLintptr;
-        typedef int GLsizeiptr;
+namespace osg
+{
+    #ifndef GL_VERSION_3_2
+    typedef struct __GLsync *GLsync;
     #endif
-#endif
+
+    // for compatibility with gl.h headers that don't support VBO,
+    //GL_VERSION_1_5 and GL_ARB_vertex_buffer_object provide these types for OpenGL
+    //all ES versions except GL_OES_VERSION_1_0 provide these types for OpenGL ES
+    #if !defined(GL_VERSION_1_5) && !defined(GL_ARB_vertex_buffer_object) \
+    && !defined(GL_ES_VERSION_2_0) && !defined(OPENGLES_1_1_FOUND)
+    
+        #if 1
+            // experimental defination.
+            typedef ptrdiff_t GLsizeiptr;
+            typedef ptrdiff_t GLintptr;
+        #else
+    
+            #if defined(_WIN64)
+                typedef __int64 GLintptr;
+                typedef __int64 GLsizeiptr;
+            #elif defined(__ia64__) || defined(__x86_64__) || defined(__ANDROID__)
+                typedef long int GLintptr;
+                typedef long int GLsizeiptr;
+            #else
+                typedef int GLintptr;
+                typedef int GLsizeiptr;
+            #endif
+        #endif
+    #endif
+}
 
 #endif

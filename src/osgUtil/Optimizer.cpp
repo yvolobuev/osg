@@ -1563,11 +1563,12 @@ void Optimizer::CombineLODsVisitor::apply(osg::LOD& lod)
     {
         for(unsigned int i=0;i<lod.getNumParents();++i)
         {
-            if (typeid(*lod.getParent(i))==typeid(osg::Group))
+            osg::Group* parent = lod.getParent(i);
+            if (typeid(*parent)==typeid(osg::Group))
             {
                 if (isOperationPermissibleForObject(&lod))
                 {
-                    _groupList.insert(lod.getParent(i)->asGroup());
+                    _groupList.insert(parent->asGroup());
                 }
             }
         }
@@ -4249,7 +4250,7 @@ void Optimizer::TextureAtlasVisitor::optimize()
                         }
                         else
                         {
-                            // if no texcoords then texgen must be being used, therefore must assume that texture is truely repeating
+                            // if no texcoords then texgen must be being used, therefore must assume that texture is truly repeating
                             s_outOfRange = true;
                             t_outOfRange = true;
                         }

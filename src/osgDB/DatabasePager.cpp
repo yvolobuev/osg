@@ -769,6 +769,7 @@ void DatabasePager::DatabaseThread::run()
                 OpenThreads::ScopedLock<OpenThreads::Mutex> drLock(_pager->_dr_mutex);
                 dr_loadOptions = databaseRequest->_loadOptions.valid() ? databaseRequest->_loadOptions->cloneOptions() : new osgDB::Options;
                 dr_loadOptions->setTerrain(databaseRequest->_terrain);
+                dr_loadOptions->setParentGroup(databaseRequest->_group);
                 fileName = databaseRequest->_fileName;
                 frameNumberLastRequest = databaseRequest->_frameNumberLastRequest;
             }
@@ -911,8 +912,7 @@ void DatabasePager::DatabaseThread::run()
 
             osg::ref_ptr<osg::Node> loadedModel;
             if (rr.validNode()) loadedModel = rr.getNode();
-            if (rr.error()) OSG_WARN<<"Error in reading file "<<fileName<<" : "<<rr.message() << std::endl;
-            if (rr.notEnoughMemory()) OSG_INFO<<"Not enought memory to load file "<<fileName << std::endl;
+            if (!rr.success()) OSG_WARN<<"Error in reading file "<<fileName<<" : "<<rr.statusMessage() << std::endl;
 
             if (loadedModel.valid() &&
                 fileCache.valid() &&
@@ -1234,6 +1234,8 @@ osg::ref_ptr<DatabasePager>& DatabasePager::prototype()
     static osg::ref_ptr<DatabasePager> s_DatabasePager = new DatabasePager;
     return s_DatabasePager;
 }
+
+OSG_INIT_SINGLETON_PROXY(ProxyInitDatabasePager, DatabasePager::prototype())
 
 DatabasePager* DatabasePager::create()
 {

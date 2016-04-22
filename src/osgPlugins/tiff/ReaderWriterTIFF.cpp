@@ -35,7 +35,7 @@
  *
  *
  * Ported into the OSG as a plugin, Robert Osfield Decemeber 2000.
- * Note, reference above to license of simage_rgb is not relevent to the OSG
+ * Note, reference above to license of simage_rgb is not relevant to the OSG
  * as the OSG does not use it.  Also for patches, bugs and new features
  * please send them direct to the OSG dev team rather than address above.
  *
@@ -852,6 +852,9 @@ class ReaderWriterTIFF : public osgDB::ReaderWriter
                         else if (compressTypeOpt == "jpeg") {
                             compressionType = COMPRESSION_JPEG;
                         }
+                        else if (compressTypeOpt == "none") {
+                            compressionType = COMPRESSION_NONE;
+                        }
                     }
                 }
             }
@@ -883,10 +886,12 @@ class ReaderWriterTIFF : public osgDB::ReaderWriter
                 case GL_DEPTH_COMPONENT:
                 case GL_LUMINANCE:
                 case GL_ALPHA:
+                case GL_RED:
                     photometric = PHOTOMETRIC_MINISBLACK;
                     samplesPerPixel = 1;
                     break;
                 case GL_LUMINANCE_ALPHA:
+                case GL_RG:
                     photometric = PHOTOMETRIC_MINISBLACK;
                     samplesPerPixel = 2;
                     break;
@@ -903,14 +908,20 @@ class ReaderWriterTIFF : public osgDB::ReaderWriter
                     break;
             }
 
+            uint32 rowsperstrip = 0;
+            
             switch(img.getDataType()){
                 case GL_FLOAT:
                     TIFFSetField(image, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-                    TIFFSetField(image, TIFFTAG_ROWSPERSTRIP, 1);
+                    rowsperstrip = 1;
                     bitsPerSample = 32;
                     break;
                 case GL_SHORT:
                     TIFFSetField(image, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_INT);
+                    bitsPerSample = 16;
+                    break;
+                case GL_UNSIGNED_SHORT:
+                    TIFFSetField(image, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
                     bitsPerSample = 16;
                     break;
                 default:
@@ -926,9 +937,9 @@ class ReaderWriterTIFF : public osgDB::ReaderWriter
             TIFFSetField(image, TIFFTAG_COMPRESSION, compressionType);
             TIFFSetField(image, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
             TIFFSetField(image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-
-            //uint32 rowsperstrip = TIFFDefaultStripSize(image, -1);
-            //TIFFSetField(image, TIFFTAG_ROWSPERSTRIP, rowsperstrip);
+            
+            if (rowsperstrip==0) rowsperstrip = TIFFDefaultStripSize(image, 0);
+            TIFFSetField(image, TIFFTAG_ROWSPERSTRIP, rowsperstrip);
 
             // Write the information to the file
             for(int i = 0; i < img.t(); ++i) {

@@ -93,10 +93,6 @@ void Texture2DMultisample::apply(State& state) const
         return;
     }
 
-    Texture::TextureObjectManager* tom = Texture::getTextureObjectManager(contextID).get();
-    ElapsedTime elapsedTime(&(tom->getApplyTime()));
-    tom->getNumberApplied()++;
-
     // get the texture object for the current contextID.
     TextureObject* textureObject = getTextureObject(contextID);
 
@@ -106,8 +102,7 @@ void Texture2DMultisample::apply(State& state) const
     }
     else if ( (_textureWidth!=0) && (_textureHeight!=0) && (_numSamples!=0) )
     {
-        _textureObjectBuffer[contextID] = textureObject =
-          generateTextureObject( this,
+        textureObject = generateAndAssignTextureObject(
                                  contextID,
                                  getTextureTarget(),
                                  1,

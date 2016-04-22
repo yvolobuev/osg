@@ -77,9 +77,9 @@ osg::Node* createMovingModel(const osg::Vec3& center, float radius)
 
     osg::AnimationPath* animationPath = createAnimationPath(center,radius,animationLength);
 
-    osg::Group* model = new osg::Group;
+    osg::ref_ptr<osg::Group> model = new osg::Group;
 
-    osg::Node* glider = osgDB::readNodeFile("glider.osgt");
+    osg::ref_ptr<osg::Node> glider = osgDB::readRefNodeFile("glider.osgt");
     if (glider)
     {
         const osg::BoundingSphere& bs = glider->getBound();
@@ -102,7 +102,7 @@ osg::Node* createMovingModel(const osg::Vec3& center, float radius)
         model->addChild(xform);
     }
 
-    osg::Node* cessna = osgDB::readNodeFile("cessna.osgt");
+    osg::ref_ptr<osg::Node> cessna = osgDB::readRefNodeFile("cessna.osgt");
     if (cessna)
     {
         const osg::BoundingSphere& bs = cessna->getBound();
@@ -126,7 +126,7 @@ osg::Node* createMovingModel(const osg::Vec3& center, float radius)
         model->addChild(xform);
     }
 
-    return model;
+    return model.release();
 }
 
 
@@ -162,8 +162,8 @@ void build_world(osg::Group *root)
     osg::Geode* terrainGeode = new osg::Geode;
     // create terrain
     {
-        osg::StateSet* stateset = new osg::StateSet();
-        osg::Image* image = osgDB::readImageFile("Images/lz.rgb");
+        osg::ref_ptr<osg::StateSet> stateset = new osg::StateSet();
+        osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile("Images/lz.rgb");
         if (image)
         {
             osg::Texture2D* texture = new osg::Texture2D;
@@ -316,7 +316,7 @@ public:
             {
                 // insert particle effects alongside the hit node, therefore able to track that nodes movement,
                 // however, this does require us to insert the ParticleSystem itself into the root of the scene graph
-                // separately from the the main particle effects group which contains the emitters and programs.
+                // separately from the main particle effects group which contains the emitters and programs.
                 // the follow code block implements this, note the path for handling particle effects which arn't attached to
                 // moving models is easy - just a single line of code!
 
@@ -340,10 +340,11 @@ public:
                     itr!=parents.end();
                     ++itr)
                 {
-                    if (typeid(*(*itr))==typeid(osg::Group))
+                    osg::Group* parent = (*itr);
+                    if (typeid(*parent)==typeid(osg::Group))
                     {
                         ++numGroupsFound;
-                        insertGroup = *itr;
+                        insertGroup = parent;
                     }
                 }
                 if (numGroupsFound==parents.size() && numGroupsFound==1 && insertGroup)

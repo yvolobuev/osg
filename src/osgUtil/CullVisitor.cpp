@@ -985,14 +985,14 @@ void CullVisitor::apply(osg::Drawable& drawable)
 
     if( drawable.getCullCallback() )
     {
-        osg::Drawable::CullCallback* dcb = dynamic_cast<osg::Drawable::CullCallback*>(drawable.getCullCallback());
+        osg::DrawableCullCallback* dcb = drawable.getCullCallback()->asDrawableCullCallback();
         if (dcb)
         {
             if( dcb->cull( this, &drawable, &_renderInfo ) == true ) return;
         }
     }
 
-    if (!getNodePath().empty() && getNodePath().back()->isCullingActive() && isCulled(bb)) return;
+    if (drawable.isCullingActive() && isCulled(bb)) return;
 
 
     if (_computeNearFar && bb.valid())
@@ -1076,7 +1076,7 @@ void CullVisitor::apply(Billboard& node)
 
         if( drawable->getCullCallback() )
         {
-            osg::Drawable::CullCallback* dcb = dynamic_cast<osg::Drawable::CullCallback*>(drawable->getCullCallback());
+            osg::DrawableCullCallback* dcb = drawable->getCullCallback()->asDrawableCullCallback();
             if (dcb && dcb->cull( this, drawable, &_renderInfo ) == true )
                 continue;
         }
@@ -1565,7 +1565,7 @@ void CullVisitor::apply(osg::Camera& camera)
         {
             OpenThreads::ScopedLock<OpenThreads::Mutex> lock(*(camera.getDataChangeMutex()));
 
-            rtts = new osgUtil::RenderStage;
+            rtts = _rootRenderStage.valid() ? osg::cloneType(_rootRenderStage.get()) : new osgUtil::RenderStage;
             rsCache->setRenderStage(this,rtts.get());
 
             rtts->setCamera(&camera);
@@ -1596,31 +1596,12 @@ void CullVisitor::apply(osg::Camera& camera)
             rtts->reset();
         }
 
-        // set up clera masks/values
+        // set up clear masks/values
         rtts->setClearDepth(camera.getClearDepth());
         rtts->setClearAccum(camera.getClearAccum());
         rtts->setClearStencil(camera.getClearStencil());
-        rtts->setClearMask(camera.getClearMask());
-
-
-        // set up the background color and clear mask.
-        if (camera.getInheritanceMask() & CLEAR_COLOR)
-        {
-            rtts->setClearColor(previous_stage->getClearColor());
-        }
-        else
-        {
-            rtts->setClearColor(camera.getClearColor());
-        }
-        if (camera.getInheritanceMask() & CLEAR_MASK)
-        {
-            rtts->setClearMask(previous_stage->getClearMask());
-        }
-        else
-        {
-            rtts->setClearMask(camera.getClearMask());
-        }
-
+        rtts->setClearMask((camera.getInheritanceMask() & CLEAR_MASK) ? previous_stage->getClearMask() : camera.getClearMask());
+        rtts->setClearColor((camera.getInheritanceMask() & CLEAR_COLOR) ? previous_stage->getClearColor() : camera.getClearColor());
 
         // set the color mask.
         osg::ColorMask* colorMask = camera.getColorMask()!=0 ? camera.getColorMask() : previous_stage->getColorMask();
@@ -1664,7 +1645,7 @@ void CullVisitor::apply(osg::Camera& camera)
 
 
         // and the render to texture stage to the current stages
-        // dependancy list.
+        // dependency list.
         switch(camera.getRenderOrder())
         {
             case osg::Camera::PRE_RENDER:

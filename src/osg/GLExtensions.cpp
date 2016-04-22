@@ -465,8 +465,10 @@ GLExtensions::GLExtensions(unsigned int contextID)
     isCubeMapSupported = OSG_GLES2_FEATURES || OSG_GL3_FEATURES ||
                           isGLExtensionSupported(contextID,"GL_ARB_texture_cube_map") ||
                           isGLExtensionSupported(contextID,"GL_EXT_texture_cube_map") ||
-                          strncmp((const char*)glGetString(GL_VERSION),"1.3",3)>=0;;
+                          (glVersion >= 1.3f);
 
+    isClipControlSupported = isGLExtensionSupported(contextID,"GL_ARB_clip_control") ||
+                             (glVersion >= 4.5f);
 
 
     isGlslSupported = ( glVersion >= 2.0f ) ||
@@ -601,6 +603,9 @@ GLExtensions::GLExtensions(unsigned int contextID)
     setGLExtensionFuncPtr(glUniformMatrix3x4fv,  "glUniformMatrix3x4fv" );
     setGLExtensionFuncPtr(glUniformMatrix4x3fv,  "glUniformMatrix4x3fv" );
 
+    // ARB_clip_control
+    setGLExtensionFuncPtr(glClipControl, "glClipControl");
+
     // EXT_geometry_shader4
     setGLExtensionFuncPtr(glProgramParameteri,  "glProgramParameteri", "glProgramParameteriEXT" );
 
@@ -686,7 +691,7 @@ GLExtensions::GLExtensions(unsigned int contextID)
     // BlendFunc extensions
     isBlendFuncSeparateSupported = OSG_GLES2_FEATURES || OSG_GL3_FEATURES ||
                                     osg::isGLExtensionSupported(contextID, "GL_EXT_blend_func_separate") ||
-                                    strncmp((const char*)glGetString(GL_VERSION), "1.4", 3) >= 0;
+                                    (glVersion >= 1.4f);
 
     setGLExtensionFuncPtr(glBlendFuncSeparate, "glBlendFuncSeparate", "glBlendFuncSeparateEXT");
 
@@ -765,7 +770,7 @@ GLExtensions::GLExtensions(unsigned int contextID)
 
     // SampleMaski functionality
     isTextureMultisampleSupported = isGLExtensionSupported(contextID, "GL_ARB_texture_multisample");
-    isOpenGL32upported = getGLVersionNumber() >= 3.2;
+    isOpenGL32upported = (glVersion >= 3.2f);
 
     // function pointers
     setGLExtensionFuncPtr(glSampleMaski, "glSampleMaski");
@@ -802,7 +807,7 @@ GLExtensions::GLExtensions(unsigned int contextID)
     isTextureFilterAnisotropicSupported = isGLExtensionSupported(contextID,"GL_EXT_texture_filter_anisotropic");
     isTextureSwizzleSupported = isGLExtensionSupported(contextID,"GL_ARB_texture_swizzle");
     isTextureCompressionARBSupported = builtInSupport || isGLExtensionOrVersionSupported(contextID,"GL_ARB_texture_compression", 1.3f);
-    isTextureCompressionS3TCSupported = isGLExtensionSupported(contextID,"GL_EXT_texture_compression_s3tc");
+    isTextureCompressionS3TCSupported = isGLExtensionSupported(contextID,"GL_EXT_texture_compression_s3tc") || isGLExtensionSupported(contextID, "GL_S3_s3tc");
     isTextureCompressionPVRTC2BPPSupported = isGLExtensionSupported(contextID,"GL_IMG_texture_compression_pvrtc");
     isTextureCompressionPVRTC4BPPSupported = isTextureCompressionPVRTC2BPPSupported;//covered by same extension
     isTextureCompressionETCSupported = isGLExtensionSupported(contextID,"GL_OES_compressed_ETC1_RGB8_texture");
@@ -866,7 +871,7 @@ GLExtensions::GLExtensions(unsigned int contextID)
 
     setGLExtensionFuncPtr(glBindImageTexture, "glBindImageTexture", "glBindImageTextureARB");
 
-    isTextureMaxLevelSupported = ( getGLVersionNumber() >= 1.2f );
+    isTextureMaxLevelSupported = (glVersion >= 1.2f);
 
     isTextureStorageEnabled = isTexStorage2DSupported();
     if ( (ptr = getenv("OSG_GL_TEXTURE_STORAGE"))  != 0 && isTexStorage2DSupported())
@@ -880,7 +885,7 @@ GLExtensions::GLExtensions(unsigned int contextID)
     isTexture3DFast = OSG_GL3_FEATURES || isGLExtensionSupported(contextID,"GL_EXT_texture3D");
 
     if (isTexture3DFast) isTexture3DSupported = true;
-    else isTexture3DSupported = strncmp((const char*)glGetString(GL_VERSION),"1.2",3)>=0;
+    else isTexture3DSupported = (glVersion >= 1.2f);
 
     maxTexture3DSize = 0;
     glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &maxTexture3DSize);
@@ -903,19 +908,19 @@ GLExtensions::GLExtensions(unsigned int contextID)
     // Blending
     isBlendColorSupported = OSG_GLES2_FEATURES || OSG_GL3_FEATURES ||
                             isGLExtensionSupported(contextID,"GL_EXT_blend_color") ||
-                            strncmp((const char*)glGetString(GL_VERSION),"1.2",3)>=0;
+                            (glVersion >= 1.2f);
 
     setGLExtensionFuncPtr(glBlendColor, "glBlendColor", "glBlendColorEXT");
 
     bool bultInSupport = OSG_GLES2_FEATURES || OSG_GL3_FEATURES;
     isBlendEquationSupported = bultInSupport ||
         isGLExtensionSupported(contextID, "GL_EXT_blend_equation") ||
-        strncmp((const char*)glGetString(GL_VERSION), "1.2", 3) >= 0;
+        (glVersion >= 1.2f);
 
 
     isBlendEquationSeparateSupported = bultInSupport ||
         isGLExtensionSupported(contextID, "GL_EXT_blend_equation_separate") ||
-        strncmp((const char*)glGetString(GL_VERSION), "2.0", 3) >= 0;
+        (glVersion >= 2.0f);
 
 
     isSGIXMinMaxSupported = isGLExtensionSupported(contextID, "GL_SGIX_blend_alpha_minmax");
@@ -936,7 +941,7 @@ GLExtensions::GLExtensions(unsigned int contextID)
     // Stencil`
     isStencilWrapSupported = isGLExtensionOrVersionSupported(contextID, "GL_EXT_stencil_wrap", 1.4f);
     isStencilTwoSidedSupported = isGLExtensionSupported(contextID, "GL_EXT_stencil_two_side");
-    isOpenGL20Supported = getGLVersionNumber() >= 2.0;
+    isOpenGL20Supported = (glVersion >= 2.0f);
     isSeparateStencilSupported = isGLExtensionSupported(contextID, "GL_ATI_separate_stencil");
 
     // function pointers
@@ -954,7 +959,7 @@ GLExtensions::GLExtensions(unsigned int contextID)
     // ClampColor
     isClampColorSupported = OSG_GL3_FEATURES ||
                              isGLExtensionSupported(contextID,"GL_ARB_color_buffer_float") ||
-                             strncmp((const char*)glGetString(GL_VERSION),"2.0",3)>=0;
+                             (glVersion >= 2.0f);
 
     setGLExtensionFuncPtr(glClampColor, "glClampColor", "glClampColorARB");
 
@@ -964,15 +969,14 @@ GLExtensions::GLExtensions(unsigned int contextID)
 
 
     // Point
-    isPointParametersSupported = OSG_GL3_FEATURES ||
-                                  strncmp((const char*)glGetString(GL_VERSION),"1.4",3)>=0 ||
+    isPointParametersSupported = OSG_GL3_FEATURES || (glVersion >= 1.4f)  ||
                                   isGLExtensionSupported(contextID,"GL_ARB_point_parameters") ||
                                   isGLExtensionSupported(contextID,"GL_EXT_point_parameters") ||
                                   isGLExtensionSupported(contextID,"GL_SGIS_point_parameters");
 
 
     isPointSpriteSupported = OSG_GL3_FEATURES || isGLExtensionSupported(contextID, "GL_ARB_point_sprite") || isGLExtensionSupported(contextID, "GL_OES_point_sprite") || isGLExtensionSupported(contextID, "GL_NV_point_sprite");
-    isPointSpriteCoordOriginSupported = OSG_GL3_FEATURES || strncmp((const char*)glGetString(GL_VERSION),"2.0",3)>=0;
+    isPointSpriteCoordOriginSupported = OSG_GL3_FEATURES || (glVersion >= 2.0f);
 
 
     setGLExtensionFuncPtr(glPointParameteri, "glPointParameteri", "glPointParameteriARB");
@@ -1028,7 +1032,9 @@ GLExtensions::GLExtensions(unsigned int contextID)
         glFramebufferTexture2D != 0 &&
         glFramebufferRenderbuffer != 0 &&
         glGenerateMipmap != 0 &&
-        glGetRenderbufferParameteriv != 0;
+        glGetRenderbufferParameteriv != 0 &&
+    ( OSG_GLES1_FEATURES || isGLExtensionOrVersionSupported(contextID, "GL_EXT_framebuffer_object",3.0f) );
+
 
     isPackedDepthStencilSupported = OSG_GL3_FEATURES ||
         (isGLExtensionSupported(contextID, "GL_EXT_packed_depth_stencil")) ||
@@ -1071,7 +1077,9 @@ GLExtensions::GLExtensions(unsigned int contextID)
     osg::setGLExtensionFuncPtr(glBindVertexArray,"glBindVertexArray");
     osg::setGLExtensionFuncPtr(glDeleteVertexArrays,"glDeleteVertexArrays");
     osg::setGLExtensionFuncPtr(glIsVertexArray,"glIsVertexArray");
-    
+
+    // MultiDrawArrays
+    setGLExtensionFuncPtr(glMultiDrawArrays, "glMultiDrawArrays", "glMultiDrawArraysEXT");
 }
 
 

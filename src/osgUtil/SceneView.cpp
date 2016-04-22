@@ -24,6 +24,7 @@
 #include <osg/ColorMatrix>
 #include <osg/LightModel>
 #include <osg/CollectOccludersVisitor>
+#include <osg/ContextData>
 
 #include <osg/GLU>
 
@@ -49,24 +50,6 @@ static const GLubyte patternVertEven[] = {
     0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
     0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
     0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55};
-
-static const GLubyte patternVertOdd[] = {
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 
 static const GLubyte patternHorzEven[] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,
@@ -598,14 +581,16 @@ void SceneView::setLightingMode(LightingMode mode)
 {
     if (mode==_lightingMode) return;
 
+    osg::StateSet* stateSetToModify = _secondaryStateSet.valid() ? _secondaryStateSet.get() : _globalStateSet.get();
+
     if (_lightingMode!=NO_SCENEVIEW_LIGHT)
     {
         // remove GL_LIGHTING mode
-        _globalStateSet->removeMode(GL_LIGHTING);
+        stateSetToModify->removeMode(GL_LIGHTING);
 
         if (_light.valid())
         {
-            _globalStateSet->removeAssociatedModes(_light.get());
+            stateSetToModify->removeAssociatedModes(_light.get());
         }
 
     }
@@ -616,10 +601,10 @@ void SceneView::setLightingMode(LightingMode mode)
     {
         #if defined(OSG_GL_FIXED_FUNCTION_AVAILABLE)
             // add GL_LIGHTING mode
-            _globalStateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
+            stateSetToModify->setMode(GL_LIGHTING, osg::StateAttribute::ON);
             if (_light.valid())
             {
-                _globalStateSet->setAssociatedModes(_light.get(), osg::StateAttribute::ON);
+                stateSetToModify->setAssociatedModes(_light.get(), osg::StateAttribute::ON);
             }
         #endif
     }
@@ -734,11 +719,11 @@ void SceneView::cull()
         else
         {
 
-            if (!_cullVisitorLeft.valid()) _cullVisitorLeft = dynamic_cast<CullVisitor*>(_cullVisitor->clone());
+            if (!_cullVisitorLeft.valid()) _cullVisitorLeft = _cullVisitor->clone();
             if (!_stateGraphLeft.valid()) _stateGraphLeft = dynamic_cast<StateGraph*>(_stateGraph->cloneType());
             if (!_renderStageLeft.valid()) _renderStageLeft = dynamic_cast<RenderStage*>(_renderStage->clone(osg::CopyOp::DEEP_COPY_ALL));
 
-            if (!_cullVisitorRight.valid()) _cullVisitorRight = dynamic_cast<CullVisitor*>(_cullVisitor->clone());
+            if (!_cullVisitorRight.valid()) _cullVisitorRight = _cullVisitor->clone();
             if (!_stateGraphRight.valid()) _stateGraphRight = dynamic_cast<StateGraph*>(_stateGraph->cloneType());
             if (!_renderStageRight.valid()) _renderStageRight = dynamic_cast<RenderStage*>(_renderStage->clone(osg::CopyOp::DEEP_COPY_ALL));
 
@@ -979,11 +964,7 @@ void SceneView::draw()
 
     state->initializeExtensionProcs();
 
-    osg::Texture::TextureObjectManager* tom = osg::Texture::getTextureObjectManager(state->getContextID()).get();
-    tom->newFrame(state->getFrameStamp());
-
-    osg::GLBufferObjectManager* bom = osg::GLBufferObjectManager::getGLBufferObjectManager(state->getContextID()).get();
-    bom->newFrame(state->getFrameStamp());
+    osg::get<ContextData>(state->getContextID())->newFrame(state->getFrameStamp());
 
     if (!_initCalled) init();
 
@@ -998,7 +979,7 @@ void SceneView::draw()
         flushDeletedGLObjects(availableTime);
     }
 
-    // assume the the draw which is about to happen could generate GL objects that need flushing in the next frame.
+    // assume the draw which is about to happen could generate GL objects that need flushing in the next frame.
     _requiresFlush = _automaticFlush;
 
     RenderLeaf* previous = NULL;
@@ -1146,14 +1127,15 @@ void SceneView::draw()
                 _renderStageRight->drawPreRenderStages(_renderInfo,previous);
 
                 double separation = _displaySettings->getSplitStereoHorizontalSeparation();
+                if (separation > 0.0)
+                {
+                    double  left_half_width = (getViewport()->width()-separation)/2.0;
 
-                double  left_half_width = (getViewport()->width()-separation)/2.0;
-
-                clearArea(static_cast<int>(getViewport()->x()+left_half_width),
-                          static_cast<int>(getViewport()->y()),
-                          static_cast<int>(separation),
-                          static_cast<int>(getViewport()->height()),_renderStageLeft->getClearColor());
-
+                    clearArea(static_cast<int>(getViewport()->x()+left_half_width),
+                              static_cast<int>(getViewport()->y()),
+                              static_cast<int>(separation),
+                              static_cast<int>(getViewport()->height()),_renderStageLeft->getClearColor());
+                }
 
                 _localStateSet->setAttribute(_viewportLeft.get());
                 _renderStageLeft->draw(_renderInfo,previous);
@@ -1196,14 +1178,16 @@ void SceneView::draw()
                 _renderStageRight->drawPreRenderStages(_renderInfo,previous);
 
                 double separation = _displaySettings->getSplitStereoVerticalSeparation();
+                if (separation > 0.0)
+                {
+                    double bottom_half_height = (getViewport()->height()-separation)/2.0;
 
-                double bottom_half_height = (getViewport()->height()-separation)/2.0;
-
-                clearArea(static_cast<int>(getViewport()->x()),
-                          static_cast<int>(getViewport()->y()+bottom_half_height),
-                          static_cast<int>(getViewport()->width()),
-                          static_cast<int>(separation),
-                          _renderStageLeft->getClearColor());
+                    clearArea(static_cast<int>(getViewport()->x()),
+                              static_cast<int>(getViewport()->y()+bottom_half_height),
+                              static_cast<int>(getViewport()->width()),
+                              static_cast<int>(separation),
+                              _renderStageLeft->getClearColor());
+                }
 
                 _localStateSet->setAttribute(_viewportLeft.get());
                 _renderStageLeft->draw(_renderInfo,previous);

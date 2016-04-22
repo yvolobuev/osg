@@ -509,7 +509,7 @@ osg::Node* ReaderWriter3DS::ReaderObject::processNode(StateSetMap& drawStateMap,
     Lib3dsMesh * mesh = lib3ds_file_mesh_for_node(f,node);
     assert(!(mesh && !object));        // Node must be a LIB3DS_NODE_MESH_INSTANCE if a mesh exists
 
-    // Retreive LOCAL transform
+    // Retrieve LOCAL transform
     static const osg::Matrix::value_type MATRIX_EPSILON = 1e-10;
     osg::Matrix osgWorldToNodeMatrix( copyLib3dsMatrixToOsgMatrix(node->matrix) );
     osg::Matrix osgWorldToParentNodeMatrix;
@@ -624,7 +624,7 @@ osg::Node* ReaderWriter3DS::ReaderObject::processNode(StateSetMap& drawStateMap,
         }
         else
         {
-            // didnt use group for children, return a ptr directly to the Geode for this mesh
+            // didn't use group for children, return a ptr directly to the Geode for this mesh
             // there is no group node but may have a meshTransform node to hold the meshes matrix
             if (meshTransform) {
                 processMesh(drawStateMap,meshTransform,mesh,meshAppliedMatPtr);
@@ -900,7 +900,7 @@ bool isNumber(float x)
    not required, we must split the vertex if a different normal is required.
    For example if we are processing a cube mesh with no smoothing group
    made from 12 triangles and 8 vertices, the resultant mesh should have
-   24 vertices to accomodate the 3 different normals at each vertex.
+   24 vertices to accommodate the 3 different normals at each vertex.
   */
 static void addVertex(
     const Lib3dsMesh* mesh,
@@ -1340,7 +1340,7 @@ ReaderWriter3DS::StateSetInfo ReaderWriter3DS::ReaderObject::createStateSet(Lib3
             // rebuild the texture with alpha channel (rescale according to map amount)
             for (int i=0, j=0; i<n; i+=4, j+=nc)
             {
-                img_data[i] = img_data[i+1] = img_data[i+2] = img_data[i+3] = one_minus_factor + orig_img_data[j]*factor;
+                img_data[i] = img_data[i+1] = img_data[i+2] = img_data[i+3] = (unsigned char)(one_minus_factor + orig_img_data[j]*factor);
             }
             osg_image->setImage(osg_image->s(),osg_image->t(),osg_image->r(), GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, img_data, osg::Image::USE_NEW_DELETE);
             opacity_map->setImage(osg_image.get());
@@ -1418,7 +1418,7 @@ ReaderWriter3DS::StateSetInfo ReaderWriter3DS::ReaderObject::createStateSet(Lib3
     // Set back face culling state if single sided material applied.
     // This seems like a reasonable assumption given that the backface cull option
     // doesn't appear to be encoded directly in the 3DS format, and also because
-    // it mirrors the effect of code in 3DS writer which uses the the face culling
+    // it mirrors the effect of code in 3DS writer which uses the face culling
     // attribute to determine the state of the 'two_sided' 3DS material being written.
     if (!mat->two_sided)
     {

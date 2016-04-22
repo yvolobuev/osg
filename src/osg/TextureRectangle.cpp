@@ -167,11 +167,6 @@ void TextureRectangle::apply(State& state) const
     // current OpenGL context.
     const unsigned int contextID = state.getContextID();
 
-    Texture::TextureObjectManager* tom = Texture::getTextureObjectManager(contextID).get();
-    ElapsedTime elapsedTime(&(tom->getApplyTime()));
-    tom->getNumberApplied()++;
-
-
     // get the texture object for the current contextID.
     TextureObject* textureObject = getTextureObject(contextID);
 
@@ -189,7 +184,7 @@ void TextureRectangle::apply(State& state) const
 
             if (!textureObject->match(GL_TEXTURE_RECTANGLE, new_numMipmapLevels, _internalFormat, new_width, new_height, 1, _borderWidth))
             {
-                Texture::releaseTextureObject(contextID, _textureObjectBuffer[contextID].get());
+                _textureObjectBuffer[contextID]->release();
                 _textureObjectBuffer[contextID] = 0;
                 textureObject = 0;
             }
@@ -211,14 +206,14 @@ void TextureRectangle::apply(State& state) const
         {
             applyTexImage_subload(GL_TEXTURE_RECTANGLE, _image.get(), state, _textureWidth, _textureHeight, _internalFormat);
 
-            // update the modified count to show that it is upto date.
+            // update the modified count to show that it is up to date.
             getModifiedCount(contextID) = _image->getModifiedCount();
         }
     }
     else if (_subloadCallback.valid())
     {
         // we don't have a applyTexImage1D_subload yet so can't reuse.. so just generate a new texture object.
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(this, contextID,GL_TEXTURE_RECTANGLE);
+        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_RECTANGLE);
 
         textureObject->bind();
 
@@ -247,8 +242,8 @@ void TextureRectangle::apply(State& state) const
         _textureWidth = image->s();
         _textureHeight = image->t();
 
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(
-                this, contextID,GL_TEXTURE_RECTANGLE,1,_internalFormat,_textureWidth,_textureHeight,1,0);
+        textureObject = generateAndAssignTextureObject(
+                contextID,GL_TEXTURE_RECTANGLE,1,_internalFormat,_textureWidth,_textureHeight,1,0);
 
         textureObject->bind();
 
@@ -273,8 +268,8 @@ void TextureRectangle::apply(State& state) const
     }
     else if ( (_textureWidth!=0) && (_textureHeight!=0) && (_internalFormat!=0) )
     {
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(
-                this, contextID,GL_TEXTURE_RECTANGLE,0,_internalFormat,_textureWidth,_textureHeight,1,0);
+        textureObject = generateAndAssignTextureObject(
+                contextID,GL_TEXTURE_RECTANGLE,0,_internalFormat,_textureWidth,_textureHeight,1,0);
 
         textureObject->bind();
 
@@ -310,7 +305,7 @@ void TextureRectangle::applyTexImage_load(GLenum target, Image* image, State& st
     const unsigned int contextID = state.getContextID();
     const GLExtensions* extensions = state.get<GLExtensions>();
 
-    // update the modified count to show that it is upto date.
+    // update the modified count to show that it is up to date.
     getModifiedCount(contextID) = image->getModifiedCount();
 
     // compute the internal texture format, sets _internalFormat.
@@ -393,7 +388,7 @@ void TextureRectangle::applyTexImage_subload(GLenum target, Image* image, State&
     const GLExtensions* extensions = state.get<GLExtensions>();
 
 
-    // update the modified count to show that it is upto date.
+    // update the modified count to show that it is up to date.
     getModifiedCount(contextID) = image->getModifiedCount();
 
     // compute the internal texture format, sets _internalFormat.
@@ -493,7 +488,7 @@ void TextureRectangle::copyTexImage2D(State& state, int x, int y, int width, int
 
     // switch off mip-mapping.
     //
-    _textureObjectBuffer[contextID] = textureObject = generateTextureObject(this, contextID,GL_TEXTURE_RECTANGLE);
+    textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_RECTANGLE);
 
     textureObject->bind();
 

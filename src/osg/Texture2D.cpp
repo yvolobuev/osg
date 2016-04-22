@@ -14,6 +14,7 @@
 #include <osg/GLExtensions>
 #include <osg/Texture2D>
 #include <osg/State>
+#include <osg/ContextData>
 #include <osg/Notify>
 
 using namespace osg;
@@ -165,10 +166,6 @@ void Texture2D::apply(State& state) const
     // current OpenGL context.
     const unsigned int contextID = state.getContextID();
 
-    Texture::TextureObjectManager* tom = Texture::getTextureObjectManager(contextID).get();
-    ElapsedTime elapsedTime(&(tom->getApplyTime()));
-    tom->getNumberApplied()++;
-
     // get the texture object for the current contextID.
     TextureObject* textureObject = getTextureObject(contextID);
     if (textureObject)
@@ -186,7 +183,7 @@ void Texture2D::apply(State& state) const
         if (textureObjectInvalidated)
         {
             // OSG_NOTICE<<"Discarding TextureObject"<<std::endl;
-            Texture::releaseTextureObject(contextID, _textureObjectBuffer[contextID].get());
+            _textureObjectBuffer[contextID]->release();
             _textureObjectBuffer[contextID] = 0;
             textureObject = 0;
         }
@@ -220,7 +217,8 @@ void Texture2D::apply(State& state) const
     }
     else if (_subloadCallback.valid())
     {
-        _textureObjectBuffer[contextID] = textureObject = _subloadCallback->generateTextureObject(*this, state);
+        _textureObjectBuffer[contextID] = _subloadCallback->generateTextureObject(*this, state);
+        textureObject = _textureObjectBuffer[contextID].get();
 
         textureObject->bind();
 
@@ -236,7 +234,7 @@ void Texture2D::apply(State& state) const
         // perhaps it is the first glBind which is not required...
         //glBindTexture( GL_TEXTURE_2D, handle );
 
-        // update the modified tag to show that it is upto date.
+        // update the modified tag to show that it is up to date.
         if (_image.valid()) getModifiedCount(contextID) = _image->getModifiedCount();
     }
     else if (_image.valid() && _image->data())
@@ -251,8 +249,7 @@ void Texture2D::apply(State& state) const
         // compute the dimensions of the texture.
         computeRequiredTextureDimensions(state,*image,_textureWidth, _textureHeight, _numMipmapLevels);
 
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(
-                this, contextID,GL_TEXTURE_2D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,_borderWidth);
+        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_2D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,_borderWidth);
 
         textureObject->bind();
 
@@ -273,7 +270,7 @@ void Texture2D::apply(State& state) const
             textureObject->setAllocated(true);
         }
 
-        // update the modified tag to show that it is upto date.
+        // update the modified tag to show that it is up to date.
         getModifiedCount(contextID) = image->getModifiedCount();
 
         // unref image data?
@@ -292,8 +289,7 @@ void Texture2D::apply(State& state) const
     }
     else if ( (_textureWidth!=0) && (_textureHeight!=0) && (_internalFormat!=0) )
     {
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(
-                this, contextID,GL_TEXTURE_2D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,_borderWidth);
+        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_2D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,_borderWidth);
 
         textureObject->bind();
 
@@ -390,7 +386,7 @@ void Texture2D::copyTexImage2D(State& state, int x, int y, int width, int height
         for(int s=1; s<width || s<height; s <<= 1, ++_numMipmapLevels) {}
     }
 
-    _textureObjectBuffer[contextID] = textureObject = generateTextureObject(this, contextID,GL_TEXTURE_2D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,0);
+    textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_2D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,0);
 
     textureObject->bind();
 

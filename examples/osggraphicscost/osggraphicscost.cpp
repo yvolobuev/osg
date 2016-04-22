@@ -29,6 +29,7 @@ class CalibrateCostEsimator : public osg::GraphicsOperation
 public:
 
     CalibrateCostEsimator(osg::GraphicsCostEstimator* gce):
+        osg::Referenced(true),
         osg::GraphicsOperation("CalbirateCostEstimator",false),
         _gce(gce) {}
 
@@ -51,12 +52,12 @@ int main(int argc, char** argv)
     osgViewer::Viewer viewer(arguments);
 
 
-    osg::ref_ptr<osg::Node> node = osgDB::readNodeFiles(arguments);
+    osg::ref_ptr<osg::Node> node = osgDB::readRefNodeFiles(arguments);
     if (!node) return 0;
 
     osg::ref_ptr<osg::GraphicsCostEstimator> gce = new osg::GraphicsCostEstimator;
 
-    viewer.setSceneData(node.get());
+    viewer.setSceneData(node);
 
     viewer.realize();
 

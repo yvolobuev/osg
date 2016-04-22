@@ -64,7 +64,7 @@ Viewer::Viewer(osg::ArgumentParser& arguments)
 
     arguments.getApplicationUsage()->addCommandLineOption("--run-on-demand","Set the run methods frame rate management to only rendering frames when required.");
     arguments.getApplicationUsage()->addCommandLineOption("--run-continuous","Set the run methods frame rate management to rendering frames continuously.");
-    arguments.getApplicationUsage()->addCommandLineOption("--run-max-frame-rate","Set the run methods maximum permissable frame rate, 0.0 is default and switching off frame rate capping.");
+    arguments.getApplicationUsage()->addCommandLineOption("--run-max-frame-rate","Set the run methods maximum permissible frame rate, 0.0 is default and switching off frame rate capping.");
     arguments.getApplicationUsage()->addCommandLineOption("--enable-object-cache","Enable caching of objects, images, etc.");
 
     // FIXME: Uncomment these lines when the options have been documented properly
@@ -165,7 +165,7 @@ Viewer::Viewer(osg::ArgumentParser& arguments)
         std::string intensityMapFilename;
         while (arguments.read("--im",intensityMapFilename)) {}
 
-        osg::ref_ptr<osg::Image> intensityMap = intensityMapFilename.empty() ? 0 : osgDB::readImageFile(intensityMapFilename);
+        osg::ref_ptr<osg::Image> intensityMap = intensityMapFilename.empty() ? 0 : osgDB::readRefImageFile(intensityMapFilename);
 
         if (screenNum<0) screenNum = 0;
 
@@ -297,7 +297,7 @@ bool Viewer::readConfiguration(const std::string& filename)
 {
     OSG_INFO<<"Viewer::readConfiguration("<<filename<<")"<<std::endl;
 
-    osg::ref_ptr<osg::Object> object = osgDB::readObjectFile(filename);
+    osg::ref_ptr<osg::Object> object = osgDB::readRefObjectFile(filename);
     if (!object)
     {
         //OSG_NOTICE<<"Error: Unable to load configuration file \""<<filename<<"\""<<std::endl;
@@ -307,10 +307,11 @@ bool Viewer::readConfiguration(const std::string& filename)
     ViewConfig* config = dynamic_cast<ViewConfig*>(object.get());
     if (config)
     {
-        OSG_NOTICE<<"Using osgViewer::Config : "<<config->className()<<std::endl;
+        OSG_INFO<<"Using osgViewer::Config : "<<config->className()<<std::endl;
+
         config->configure(*this);
 
-        osgDB::writeObjectFile(*config,"test.osgt");
+        //osgDB::writeObjectFile(*config,"test.osgt");
 
         return true;
     }
@@ -443,7 +444,7 @@ void Viewer::setReferenceTime(double time)
 {
     osg::Timer_t tick = osg::Timer::instance()->tick();
     double currentTime = osg::Timer::instance()->delta_s(_startTick, tick);
-    double delta_ticks = (time-currentTime)*(osg::Timer::instance()->getSecondsPerTick());
+    double delta_ticks = (time-currentTime)/(osg::Timer::instance()->getSecondsPerTick());
     if (delta_ticks>=0) tick += osg::Timer_t(delta_ticks);
     else tick -= osg::Timer_t(-delta_ticks);
 
@@ -586,6 +587,7 @@ void Viewer::realize()
     // pass on the start tick to all the associated event queues
     setStartTick(osg::Timer::instance()->getStartTick());
 
+    // configure threading.
     setUpThreading();
 
     if (osg::DisplaySettings::instance()->getCompileContextsHint())
@@ -753,7 +755,7 @@ void Viewer::generateSlavePointerData(osg::Camera* camera, osgGA::GUIEventAdapte
                                         }
                                         else if (tcm)
                                         {
-                                            OSG_NOTICE<<"  Slave has matched texture cubemap"<<ba_itr->second._texture.get()<<", "<<ba_itr->second._face<<std::endl;
+                                            OSG_INFO<<"  Slave has matched texture cubemap"<<ba_itr->second._texture.get()<<", "<<ba_itr->second._face<<std::endl;
                                         }
                                         else
                                         {
@@ -785,6 +787,8 @@ void Viewer::generatePointerData(osgGA::GUIEventAdapter& event)
 
     event.addPointerData(new osgGA::PointerData(gw, x, 0, gw->getTraits()->width,
                                                     y, 0, gw->getTraits()->height));
+
+    event.setMouseYOrientationAndUpdateCoords(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
 
     typedef std::vector<osg::Camera*> CameraVector;
     CameraVector activeCameras;
@@ -843,7 +847,10 @@ void Viewer::reprojectPointerData(osgGA::GUIEventAdapter& source_event, osgGA::G
     dest_event.addPointerData(new osgGA::PointerData(gw, x, 0, gw->getTraits()->width,
                                                          y, 0, gw->getTraits()->height));
 
-    osg::Camera* camera = (source_event.getNumPointerData()>=2) ? dynamic_cast<osg::Camera*>(source_event.getPointerData(1)->object.get()) : 0;
+    dest_event.setMouseYOrientationAndUpdateCoords(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
+
+    osg::Object* object = (source_event.getNumPointerData()>=2) ? source_event.getPointerData(1)->object.get() : 0;
+    osg::Camera* camera = object ? object->asCamera() : 0;
     osg::Viewport* viewport = camera ? camera->getViewport() : 0;
 
     if (!viewport) return;
@@ -936,16 +943,6 @@ void Viewer::eventTraversal()
                             reprojectPointerData(*eventState, *event);
                         }
 
-#if 0
-                        // assign topmost PointeData settings as the events X,Y and InputRange
-                        osgGA::PointerData* pd = event->getPointerData(event->getNumPointerData()-1);
-                        event->setX(pd->x);
-                        event->setY(pd->y);
-                        event->setInputRange(pd->xMin, pd->yMin, pd->xMax, pd->yMax);
-                        event->setMouseYOrientation(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
-#else
-                        event->setMouseYOrientationAndUpdateCoords(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
-#endif
 
                         eventState->copyPointerDataFrom(*event);
 
@@ -988,7 +985,18 @@ void Viewer::eventTraversal()
     }
 
     // create a frame event for the new frame.
-    _eventQueue->frame( getFrameStamp()->getReferenceTime() );
+    {
+        osg::ref_ptr<osgGA::GUIEventAdapter> event = _eventQueue->frame( getFrameStamp()->getReferenceTime() );
+
+        if (!eventState || eventState->getNumPointerData()<2)
+        {
+            generatePointerData(*event);
+        }
+        else
+        {
+            reprojectPointerData(*eventState, *event);
+        }
+    }
 
     // OSG_NOTICE<<"mouseEventState Xmin = "<<eventState->getXmin()<<" Ymin="<<eventState->getYmin()<<" xMax="<<eventState->getXmax()<<" Ymax="<<eventState->getYmax()<<std::endl;
 

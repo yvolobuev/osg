@@ -204,10 +204,6 @@ void Texture3D::apply(State& state) const
     // current OpenGL context.
     const unsigned int contextID = state.getContextID();
 
-    Texture::TextureObjectManager* tom = Texture::getTextureObjectManager(contextID).get();
-    ElapsedTime elapsedTime(&(tom->getApplyTime()));
-    tom->getNumberApplied()++;
-
     const GLExtensions* extensions = state.get<GLExtensions>();
 
     if (!extensions->isTexture3DSupported)
@@ -233,7 +229,7 @@ void Texture3D::apply(State& state) const
 
             if (!textureObject->match(GL_TEXTURE_3D, new_numMipmapLevels, _internalFormat, new_width, new_height, new_depth, _borderWidth))
             {
-                Texture::releaseTextureObject(contextID, _textureObjectBuffer[contextID].get());
+                _textureObjectBuffer[contextID]->release();
                 _textureObjectBuffer[contextID] = 0;
                 textureObject = 0;
             }
@@ -257,7 +253,7 @@ void Texture3D::apply(State& state) const
 
             applyTexImage3D(GL_TEXTURE_3D,_image.get(),state, _textureWidth, _textureHeight, _textureDepth,_numMipmapLevels);
 
-            // update the modified count to show that it is upto date.
+            // update the modified count to show that it is up to date.
             getModifiedCount(contextID) = _image->getModifiedCount();
         }
 
@@ -265,7 +261,7 @@ void Texture3D::apply(State& state) const
     else if (_subloadCallback.valid())
     {
 
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(this, contextID,GL_TEXTURE_3D);
+        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_3D);
 
         textureObject->bind();
 
@@ -291,7 +287,7 @@ void Texture3D::apply(State& state) const
         // compute the dimensions of the texture.
         computeRequiredTextureDimensions(state,*_image,_textureWidth, _textureHeight, _textureDepth,_numMipmapLevels);
 
-        textureObject = generateTextureObject(this, contextID,GL_TEXTURE_3D);
+        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_3D);
 
         textureObject->bind();
 
@@ -302,10 +298,8 @@ void Texture3D::apply(State& state) const
 
         textureObject->setAllocated(_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,_textureDepth,0);
 
-        // update the modified count to show that it is upto date.
+        // update the modified count to show that it is up to date.
         getModifiedCount(contextID) = _image->getModifiedCount();
-
-        _textureObjectBuffer[contextID] = textureObject;
 
         // unref image data?
         if (isSafeToUnrefImageData(state) && _image->getDataVariance()==STATIC)
@@ -317,8 +311,8 @@ void Texture3D::apply(State& state) const
     }
     else if ( (_textureWidth!=0) && (_textureHeight!=0) && (_textureDepth!=0) && (_internalFormat!=0) )
     {
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(
-                this, contextID,GL_TEXTURE_3D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,_textureDepth,0);
+        textureObject = generateAndAssignTextureObject(
+                contextID,GL_TEXTURE_3D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,_textureDepth,0);
 
         textureObject->bind();
 
@@ -507,7 +501,7 @@ void Texture3D::copyTexSubImage3D(State& state, int xoffset, int yoffset, int zo
     }
     else
     {
-        OSG_WARN<<"Warning: Texture3D::copyTexSubImage3D(..) failed, cannot not copy to a non existant texture."<<std::endl;
+        OSG_WARN<<"Warning: Texture3D::copyTexSubImage3D(..) failed, cannot not copy to a non existent texture."<<std::endl;
     }
 }
 

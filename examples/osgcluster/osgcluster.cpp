@@ -44,7 +44,6 @@
 #include "broadcaster.h"
 
 
-const unsigned int MAX_NUM_EVENTS = 10;
 const unsigned int SWAP_BYTES_COMPARE = 0x12345678;
 class CameraPacket {
     public:
@@ -506,7 +505,7 @@ int main( int argc, char **argv )
     }
 
     // load model.
-    osg::ref_ptr<osg::Node> rootnode = osgDB::readNodeFiles(arguments);
+    osg::ref_ptr<osg::Node> rootnode = osgDB::readRefNodeFiles(arguments);
 
     // set the scene to render
     viewer.setSceneData(rootnode.get());
@@ -615,7 +614,7 @@ int main( int argc, char **argv )
 
         osg::notify(osg::INFO)<<"Time to do cluster sync "<<osg::Timer::instance()->delta_m(startTick,endTick)<<std::endl;
 
-        // update the scene by traversing it with the the update visitor which will
+        // update the scene by traversing it with the update visitor which will
         // call all node update callbacks and animations.
         viewer.eventTraversal();
         viewer.updateTraversal();

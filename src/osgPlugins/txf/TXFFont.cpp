@@ -120,7 +120,7 @@ TXFFont::hasVertical() const
 }
 
 osg::Vec2
-TXFFont::getKerning(unsigned int, unsigned int, osgText::KerningType)
+TXFFont::getKerning(const osgText::FontResolution&, unsigned int, unsigned int, osgText::KerningType)
 {
     return osg::Vec2(0, 0);
 }
@@ -137,7 +137,7 @@ TXFFont::loadFont(std::istream& stream)
         return false;
     }
 
-    // read endianess hint
+    // read endianness hint
     bool isSwapped = 0x12345678u != readInt(stream, false);
 
     unsigned format = readInt(stream, isSwapped);

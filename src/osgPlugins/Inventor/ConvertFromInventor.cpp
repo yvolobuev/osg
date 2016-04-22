@@ -1088,7 +1088,7 @@ static osgDB::ReaderWriter::Options* createOptions()
 
 static osg::Image* loadImage(const char *fileName, osgDB::ReaderWriter::Options *options)
 {
-    osg::ref_ptr<osg::Image> osgImage = osgDB::readImageFile(fileName, options);
+    osg::ref_ptr<osg::Image> osgImage = osgDB::readRefImageFile(fileName, options);
 
     if (!osgImage)
     {
@@ -1652,7 +1652,7 @@ ConvertFromInventor::getStateSet(SoCallbackAction* action)
 
         stateSet->setTextureAttributeAndModes(0, texture.get(), osg::StateAttribute::ON);
 
-        // propogate name
+        // propagate name
         if(texture.valid())
         {
             std::string name = texture->getName();

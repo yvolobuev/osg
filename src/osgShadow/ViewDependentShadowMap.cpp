@@ -168,8 +168,8 @@ VDSMCameraCullCallback::VDSMCameraCullCallback(ViewDependentShadowMap* vdsm, osg
 
 void VDSMCameraCullCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
-    osgUtil::CullVisitor* cv = dynamic_cast<osgUtil::CullVisitor*>(nv);
-    osg::Camera* camera = dynamic_cast<osg::Camera*>(node);
+    osgUtil::CullVisitor* cv = nv->asCullVisitor();
+    osg::Camera* camera = node->asCamera();
     OSG_INFO<<"VDSMCameraCullCallback::operator()(osg::Node* "<<camera<<", osg::NodeVisitor* "<<cv<<")"<<std::endl;
 
 #if 1
@@ -2145,7 +2145,7 @@ bool ViewDependentShadowMap::adjustPerspectiveShadowMapCameraSettings(osgUtil::R
     double gamma_v = acos(dotProduct_v);
     if (gamma_v<osg::DegreesToRadians(settings->getPerspectiveShadowMapCutOffAngle()) || gamma_v>osg::DegreesToRadians(180-settings->getPerspectiveShadowMapCutOffAngle()))
     {
-        // OSG_NOTICE<<"Light and view vectors near parrallel - use standard shadow map."<<std::endl;
+        // OSG_NOTICE<<"Light and view vectors near parallel - use standard shadow map."<<std::endl;
         return true;
     }
 

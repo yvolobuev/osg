@@ -104,7 +104,7 @@ void Layout::layout(TextNode& text) const
         }
         else
         {
-            osgText::Glyph3D* glyph = font->getGlyph3D(charcode);
+            osgText::Glyph3D* glyph = font->getGlyph3D(resolution, charcode);
             OSG_NOTICE<<"pos = "<<pos<<", charcode="<<charcode<<", glyph="<<glyph<< std::endl;
             if (glyph)
             {
@@ -116,7 +116,7 @@ void Layout::layout(TextNode& text) const
 
         if (previousCharcode!=0 && charcode!=0)
         {
-            osg::Vec2 offset = font->getKerning(previousCharcode, charcode, kerningType);
+            osg::Vec2 offset = font->getKerning(resolution, previousCharcode, charcode, kerningType);
             OSG_NOTICE<<"  offset = "<<offset<< std::endl;
             pos.x() += offset.x();
             pos.y() += offset.y();
@@ -183,9 +183,7 @@ void TextTechnique::addCharacter(const osg::Vec3& position, const osg::Vec3& siz
 
     if (bevel)
     {
-        float thickness = bevel->getBevelThickness();
-
-        osg::ref_ptr<osg::Geometry> glyphGeometry = osgText::computeGlyphGeometry(glyph, thickness, width);
+        osg::ref_ptr<osg::Geometry> glyphGeometry = osgText::computeGlyphGeometry(glyph, *bevel, width);
         osg::ref_ptr<osg::Geometry> textGeometry = osgText::computeTextGeometry(glyphGeometry.get(), *bevel, width);
         osg::ref_ptr<osg::Geometry> shellGeometry = outline ? osgText::computeShellGeometry(glyphGeometry.get(), *bevel, width) : 0;
         if (textGeometry.valid()) geode->addDrawable(textGeometry.get());

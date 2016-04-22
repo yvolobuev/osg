@@ -87,7 +87,7 @@ osg::BoundingBox MinimalShadowMap::ViewData::computeShadowReceivingCoarseBounds(
         frustum.cut( box );
 
         // approximate sphere with octahedron. Ie first cut by box then
-        // additionaly cut with the same box rotated 45, 45, 45 deg.
+        // additionally cut with the same box rotated 45, 45, 45 deg.
         box.transform( // rotate box around its center
             osg::Matrix::translate( -bs.center() ) *
             osg::Matrix::rotate( osg::PI_4, 0, 0, 1 ) *
@@ -353,17 +353,22 @@ void MinimalShadowMap::ViewData::cutScenePolytope
         _sceneReceivingShadowPolytope.clear();
 }
 
-osg::BoundingBox
-    MinimalShadowMap::ViewData::computeScenePolytopeBounds( const osg::Matrix & m )
+osg::BoundingBox MinimalShadowMap::ViewData::computeScenePolytopeBounds()
 {
     osg::BoundingBox bb;
 
-    if( &m )
-        for( unsigned i = 0; i < _sceneReceivingShadowPolytopePoints.size(); ++i )
-            bb.expandBy( _sceneReceivingShadowPolytopePoints[i] * m );
-    else
-        for( unsigned i = 0; i < _sceneReceivingShadowPolytopePoints.size(); ++i )
-            bb.expandBy( _sceneReceivingShadowPolytopePoints[i] );
+    for( unsigned i = 0; i < _sceneReceivingShadowPolytopePoints.size(); ++i )
+        bb.expandBy( _sceneReceivingShadowPolytopePoints[i] );
+
+    return bb;
+}
+
+osg::BoundingBox MinimalShadowMap::ViewData::computeScenePolytopeBounds( const osg::Matrix & m )
+{
+    osg::BoundingBox bb;
+
+    for( unsigned i = 0; i < _sceneReceivingShadowPolytopePoints.size(); ++i )
+        bb.expandBy( _sceneReceivingShadowPolytopePoints[i] * m );
 
     return bb;
 }

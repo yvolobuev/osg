@@ -135,7 +135,7 @@ String::iterator Text3D::computeLastCharacterOnLine(osg::Vec2& cursor, String::i
             return lastChar;
         }
 
-        Glyph3D* glyph = _font->getGlyph3D(charcode);
+        Glyph3D* glyph = _font->getGlyph3D(_fontSize, charcode);
         if (glyph)
         {
             const osg::BoundingBox & bb = glyph->getBoundingBox();
@@ -152,14 +152,14 @@ String::iterator Text3D::computeLastCharacterOnLine(osg::Vec2& cursor, String::i
                 {
                   case LEFT_TO_RIGHT:
                   {
-                    osg::Vec2 delta(_font->getKerning(previous_charcode,charcode,_kerningType));
+                    osg::Vec2 delta(_font->getKerning(_fontSize, previous_charcode, charcode, _kerningType));
                     cursor.x() += delta.x() * wr;
                     cursor.y() += delta.y() * hr;
                     break;
                   }
                   case RIGHT_TO_LEFT:
                   {
-                    osg::Vec2 delta(_font->getKerning(charcode,previous_charcode,_kerningType));
+                    osg::Vec2 delta(_font->getKerning(_fontSize, charcode, previous_charcode, _kerningType));
                     cursor.x() -= delta.x() * wr;
                     cursor.y() -= delta.y() * hr;
                     break;
@@ -226,7 +226,7 @@ String::iterator Text3D::computeLastCharacterOnLine(osg::Vec2& cursor, String::i
             // Subtract off glyphs from the cursor position (to correctly center text)
                 if(*prevChar != '-')
             {
-                Glyph3D* glyph = _font->getGlyph3D(*prevChar);
+                Glyph3D* glyph = _font->getGlyph3D(_fontSize, *prevChar);
                 if (glyph)
                 {
                     switch(_layout)
@@ -299,7 +299,7 @@ void Text3D::computeGlyphRepresentation()
             {
                 unsigned int charcode = *itr;
 
-                Glyph3D* glyph = _font->getGlyph3D(charcode);
+                Glyph3D* glyph = _font->getGlyph3D(_fontSize, charcode);
                 if (glyph)
                 {
                     const osg::BoundingBox & bb = glyph->getBoundingBox();
@@ -316,14 +316,14 @@ void Text3D::computeGlyphRepresentation()
                         {
                           case LEFT_TO_RIGHT:
                           {
-                            osg::Vec2 delta(_font->getKerning(previous_charcode,charcode,_kerningType));
+                            osg::Vec2 delta(_font->getKerning(_fontSize, previous_charcode, charcode, _kerningType));
                             cursor.x() += delta.x() * wr;
                             cursor.y() += delta.y() * hr;
                             break;
                           }
                           case RIGHT_TO_LEFT:
                           {
-                            osg::Vec2 delta(_font->getKerning(charcode,previous_charcode,_kerningType));
+                            osg::Vec2 delta(_font->getKerning(_fontSize, charcode, previous_charcode, _kerningType));
                             cursor.x() -= delta.x() * wr;
                             cursor.y() -= delta.y() * hr;
                             break;
@@ -369,12 +369,11 @@ void Text3D::computeGlyphRepresentation()
             ++itr;
         }
 
-        if (itr!=_text.end())
-        {
-            // skip over spaces and return.
-            while (*itr==' ') ++itr;
-            if (*itr=='\n') ++itr;
-        }
+        // skip over spaces
+        while ((itr!=_text.end()) && (*itr==' ')) ++itr;
+
+        // skip over return
+        if ((itr!=_text.end()) && (*itr=='\n')) ++itr;
 
         // move to new line.
         switch(_layout)

@@ -121,7 +121,7 @@ osg::Node* createScene()
     stateset->setTextureAttributeAndModes(0,terrainTexture,osg::StateAttribute::ON);
 
 
-    osg::Image* image = osgDB::readImageFile("Images/lz.rgb");
+    osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile("Images/lz.rgb");
     if (image)
     {
         osg::Texture2D* texture = new osg::Texture2D;
@@ -261,6 +261,7 @@ class TestSupportOperation: public osg::GraphicsOperation
 public:
 
     TestSupportOperation():
+        osg::Referenced(true),
         osg::GraphicsOperation("TestSupportOperation",false),
         _supported(true),
         _errorMessage() {}

@@ -19,6 +19,7 @@
 #include <osg/Texture3D>
 #include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
+#include <osg/ContextData>
 #include <osg/GLExtensions>
 #include <osg/GLU>
 
@@ -537,12 +538,8 @@ void RenderStage::runCameraSetUp(osg::RenderInfo& renderInfo)
                 fbo = 0;
 
                 // clean up.
-                double availableTime = 100.0f;
-                double currentTime = state.getFrameStamp()?state.getFrameStamp()->getReferenceTime():0.0;
-                osg::RenderBuffer::flushDeletedRenderBuffers(state.getContextID(),currentTime,availableTime);
-                osg::FrameBufferObject::flushDeletedFrameBufferObjects(state.getContextID(),currentTime,availableTime);
-
-
+                osg::get<osg::GLRenderBufferManager>(state.getContextID())->flushAllDeletedGLObjects();
+                osg::get<osg::GLFrameBufferObjectManager>(state.getContextID())->flushAllDeletedGLObjects();
             }
             else
             {
@@ -568,10 +565,8 @@ void RenderStage::runCameraSetUp(osg::RenderInfo& renderInfo)
                         _resolveFbo = 0;
 
                         // clean up.
-                        double availableTime = 100.0f;
-                        double currentTime = state.getFrameStamp()?state.getFrameStamp()->getReferenceTime():0.0;
-                        osg::RenderBuffer::flushDeletedRenderBuffers(state.getContextID(),currentTime,availableTime);
-                        osg::FrameBufferObject::flushDeletedFrameBufferObjects(state.getContextID(),currentTime,availableTime);
+                        osg::get<osg::GLRenderBufferManager>(state.getContextID())->flushAllDeletedGLObjects();
+                        osg::get<osg::GLFrameBufferObjectManager>(state.getContextID())->flushAllDeletedGLObjects();
                     }
                     else
                     {
@@ -1025,7 +1020,7 @@ void RenderStage::drawInner(osg::RenderInfo& renderInfo,RenderLeaf*& previous, b
                 }
             }
             // reset the read and draw buffers?  will comment out for now with the assumption that
-            // the buffers will be set explictly when needed elsewhere.
+            // the buffers will be set explicitly when needed elsewhere.
             // glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
             // glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
         }
@@ -1122,6 +1117,7 @@ void RenderStage::drawInner(osg::RenderInfo& renderInfo,RenderLeaf*& previous, b
 struct DrawInnerOperation : public osg::Operation
 {
     DrawInnerOperation(RenderStage* stage, osg::RenderInfo& renderInfo) :
+        osg::Referenced(true),
         osg::Operation("DrawInnerStage",false),
         _stage(stage),
         _renderInfo(renderInfo) {}
@@ -1159,7 +1155,7 @@ void RenderStage::draw(osg::RenderInfo& renderInfo,RenderLeaf*& previous)
 
     if (_camera.valid() && _camera->getInitialDrawCallback())
     {
-        // if we have a camera with a intial draw callback invoke it.
+        // if we have a camera with a initial draw callback invoke it.
         (*(_camera->getInitialDrawCallback()))(renderInfo);
     }
 
@@ -1167,7 +1163,7 @@ void RenderStage::draw(osg::RenderInfo& renderInfo,RenderLeaf*& previous)
     // so there is no need to call it here.
     drawPreRenderStages(renderInfo,previous);
 
-    if (_cameraRequiresSetUp || (_cameraAttachmentMapModifiedCount!=_camera->getAttachmentMapModifiedCount()))
+    if (_cameraRequiresSetUp || (_camera.valid() && _cameraAttachmentMapModifiedCount!=_camera->getAttachmentMapModifiedCount()))
     {
         runCameraSetUp(renderInfo);
     }
@@ -1524,14 +1520,14 @@ void RenderStage::clearReferencesToDependentCameras()
         itr != _preRenderList.end();
         ++itr)
     {
-        itr->second->collateReferencesToDependentCameras();
+        itr->second->clearReferencesToDependentCameras();
     }
 
     for(RenderStageList::iterator itr = _postRenderList.begin();
         itr != _postRenderList.end();
         ++itr)
     {
-        itr->second->collateReferencesToDependentCameras();
+        itr->second->clearReferencesToDependentCameras();
     }
 
     _dependentCameras.clear();

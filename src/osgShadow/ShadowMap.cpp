@@ -60,16 +60,6 @@ static const char fragmentShaderSource_withBaseTexture[] =
 //////////////////////////////////////////////////////////////////
 // fragment shader
 //
-static const char fragmentShaderSource_debugHUD_texcoord[] =
-    "uniform sampler2D osgShadow_shadowTexture; \n"
-    " \n"
-    "void main(void) \n"
-    "{ \n"
-    "   vec4 texCoord = gl_TexCoord[1].xyzw; \n"
-    "   float value = texCoord.z / texCoord.w; \n"
-    "   gl_FragColor = vec4( value, value, value, 1.0 ); \n"
-    "} \n";
-
 static const char fragmentShaderSource_debugHUD[] =
     "uniform sampler2D osgShadow_shadowTexture; \n"
     " \n"
@@ -97,6 +87,42 @@ ShadowTechnique(copy,copyop),
     _ambientBias(copy._ambientBias),
     _textureSize(copy._textureSize)
 {
+}
+
+void ShadowMap::resizeGLObjectBuffers(unsigned int maxSize)
+{
+    osg::resizeGLObjectBuffers(_camera, maxSize);
+    osg::resizeGLObjectBuffers(_texgen, maxSize);
+    osg::resizeGLObjectBuffers(_texture, maxSize);
+    osg::resizeGLObjectBuffers(_stateset, maxSize);
+    osg::resizeGLObjectBuffers(_program, maxSize);
+
+    osg::resizeGLObjectBuffers(_ls, maxSize);
+
+    for(ShaderList::iterator itr = _shaderList.begin();
+        itr != _shaderList.end();
+        ++itr)
+    {
+        osg::resizeGLObjectBuffers(*itr, maxSize);
+    }
+}
+
+void ShadowMap::releaseGLObjects(osg::State* state) const
+{
+    osg::releaseGLObjects(_camera, state);
+    osg::releaseGLObjects(_texgen, state);
+    osg::releaseGLObjects(_texture, state);
+    osg::releaseGLObjects(_stateset, state);
+    osg::releaseGLObjects(_program, state);
+
+    osg::releaseGLObjects(_ls, state);
+
+    for(ShaderList::const_iterator itr = _shaderList.begin();
+        itr != _shaderList.end();
+        ++itr)
+    {
+        osg::releaseGLObjects(*itr, state);
+    }
 }
 
 void ShadowMap::setTextureUnit(unsigned int unit)
@@ -296,7 +322,7 @@ void ShadowMap::init()
             //       not yet supported !
 
             osg::Image* image = new osg::Image;
-            // allocate the image data, noPixels x 1 x 1 with 4 rgba floats - equivilant to a Vec4!
+            // allocate the image data, noPixels x 1 x 1 with 4 rgba floats - equivalent to a Vec4!
             int noPixels = 1;
             image->allocateImage(noPixels,1,1,GL_RGBA,GL_FLOAT);
             image->setInternalTextureFormat(GL_RGBA);
@@ -337,7 +363,7 @@ void ShadowMap::cull(osgUtil::CullVisitor& cv)
 
     osgUtil::RenderStage* orig_rs = cv.getRenderStage();
 
-    // do traversal of shadow recieving scene which does need to be decorated by the shadow map
+    // do traversal of shadow receiving scene which does need to be decorated by the shadow map
     {
         cv.pushStateSet(_stateset.get());
 

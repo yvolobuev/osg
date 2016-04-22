@@ -186,8 +186,8 @@ void GlyphTexture::apply(osg::State& state) const
 
         // being bound for the first time, need to allocate the texture
 
-        _textureObjectBuffer[contextID] = textureObject = osg::Texture::generateTextureObject(
-            this, contextID, GL_TEXTURE_2D, 1, OSGTEXT_GLYPH_INTERNALFORMAT, getTextureWidth(), getTextureHeight(), 1, 0);
+        textureObject = osg::Texture::generateAndAssignTextureObject(
+            contextID, GL_TEXTURE_2D, 1, OSGTEXT_GLYPH_INTERNALFORMAT, getTextureWidth(), getTextureHeight(), 1, 0);
 
         textureObject->bind();
 
@@ -626,9 +626,7 @@ void GlyphGeometry::setup(const Glyph3D* glyph, const Style* style)
 
         if (bevel)
         {
-            float thickness = bevel->getBevelThickness();
-
-            osg::ref_ptr<osg::Geometry> glyphGeometry = osgText::computeGlyphGeometry(glyph, thickness, width);
+            osg::ref_ptr<osg::Geometry> glyphGeometry = osgText::computeGlyphGeometry(glyph, *bevel, width);
 
             _geometry = osgText::computeTextGeometry(glyphGeometry.get(), *bevel, width);
             shellGeometry = outline ? osgText::computeShellGeometry(glyphGeometry.get(), *bevel, width) : 0;

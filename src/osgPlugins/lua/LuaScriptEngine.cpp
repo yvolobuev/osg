@@ -140,7 +140,7 @@ static int getContainerProperty(lua_State * _lua)
             osgDB::VectorBaseSerializer* vs = dynamic_cast<osgDB::VectorBaseSerializer*>(bs);
             if (vs)
             {
-                const void* dataPtr = vs->getElement(*object, index);
+                const void* dataPtr = vs->getElement(*object, (unsigned int) index);
                 if (dataPtr)
                 {
                     SerializerScratchPad valuesp(vs->getElementType(), dataPtr, vs->getElementSize());
@@ -191,7 +191,7 @@ static int setContainerProperty(lua_State* _lua)
                 SerializerScratchPad ssp;
                 lse->getDataFromStack(&ssp, vs->getElementType(), 3);
                 {
-                    vs->setElement(*object, index, ssp.data);
+                    vs->setElement(*object, (unsigned int) index, ssp.data);
                 }
             }
             return 0;
@@ -1767,7 +1767,7 @@ static int readObjectFile(lua_State * _lua)
     if (n==1 && lua_type(_lua, 1)==LUA_TSTRING)
     {
         std::string filename = lua_tostring(_lua, 1);
-        osg::ref_ptr<osg::Object> object = osgDB::readObjectFile(filename);
+        osg::ref_ptr<osg::Object> object = osgDB::readRefObjectFile(filename);
         if (object.valid())
         {
             lse->pushObject(object.get());
@@ -1785,7 +1785,7 @@ static int readImageFile(lua_State * _lua)
     if (n==1 && lua_type(_lua, 1)==LUA_TSTRING)
     {
         std::string filename = lua_tostring(_lua, 1);
-        osg::ref_ptr<osg::Image> image = osgDB::readImageFile(filename);
+        osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile(filename);
         if (image.valid())
         {
             lse->pushObject(image.get());
@@ -1803,7 +1803,7 @@ static int readNodeFile(lua_State * _lua)
     if (n==1 && lua_type(_lua, 1)==LUA_TSTRING)
     {
         std::string filename = lua_tostring(_lua, 1);
-        osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(filename);
+        osg::ref_ptr<osg::Node> node = osgDB::readRefNodeFile(filename);
         if (node.valid())
         {
             lse->pushObject(node.get());
@@ -3808,7 +3808,7 @@ void LuaScriptEngine::pushValue(const osg::Matrixf& value) const
     {
         for(unsigned int c=0; c<4; ++c)
         {
-            lua_pushnumber(_lua, r*4+c); lua_pushinteger(_lua, value(r,c)); lua_settable(_lua, -3);
+            lua_pushnumber(_lua, r*4+c); lua_pushinteger(_lua, (lua_Integer) value(r,c)); lua_settable(_lua, -3);
         }
     }
 }

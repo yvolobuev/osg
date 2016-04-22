@@ -228,11 +228,12 @@ void ARBQuerySupport::checkQuery(osg::Stats* stats, osg::State* state,
                 // If the high bits on any of the timestamp bits are
                 // different then the counters may have wrapped.
                 const int hiShift = (tbits - 1);
-                const GLuint64 hiMask = 1 << hiShift;
+                const GLuint64 one = 1;
+                const GLuint64 hiMask = one << hiShift;
                 const GLuint64 sum = (beginTimestamp >> hiShift)
                     + (endTimestamp >> hiShift) + (gpuTimestamp >> hiShift);
                 if (sum == 1 || sum == 2) {
-                    const GLuint64 wrapAdd = 1 << tbits;
+                    const GLuint64 wrapAdd = one << tbits;
                     // Counter wrapped between begin and end?
                     if (beginTimestamp > endTimestamp)
                     {
@@ -352,6 +353,7 @@ static OpenThreads::ReentrantMutex s_drawSerializerMutex;
 //
 //  Renderer
 Renderer::Renderer(osg::Camera* camera):
+    osg::Referenced(true),
     osg::GraphicsOperation("Renderer",true),
     _camera(camera),
     _done(false),
@@ -366,6 +368,10 @@ Renderer::Renderer(osg::Camera* camera):
 
     _sceneView[0] = new osgUtil::SceneView;
     _sceneView[1] = new osgUtil::SceneView;
+
+    // each SceneView to have their own FrameStamp to avoid thread conflicts with the Viewer's main FrameStamp
+    _sceneView[0]->setFrameStamp(new osg::FrameStamp());
+    _sceneView[1]->setFrameStamp(new osg::FrameStamp());
 
     osg::Camera* masterCamera = _camera->getView() ? _camera->getView()->getCamera() : camera;
 
@@ -527,7 +533,15 @@ void Renderer::updateSceneView(osgUtil::SceneView* sceneView)
     osgDB::ImagePager* imagePager = view ? view->getImagePager() : 0;
     sceneView->getCullVisitor()->setImageRequestHandler(imagePager);
 
-    sceneView->setFrameStamp(view ? view->getFrameStamp() : state->getFrameStamp());
+
+    if (view && view->getFrameStamp())
+    {
+        (*sceneView->getFrameStamp()) = *(view->getFrameStamp());
+    }
+    else if (state->getFrameStamp())
+    {
+        (*sceneView->getFrameStamp()) = *(state->getFrameStamp());
+    }
 
     osg::DisplaySettings* ds = _camera->getDisplaySettings() ?  _camera->getDisplaySettings() :
                                ((view &&view->getDisplaySettings()) ?  view->getDisplaySettings() :  osg::DisplaySettings::instance().get());
@@ -541,6 +555,15 @@ void Renderer::updateSceneView(osgUtil::SceneView* sceneView)
     {
         _startTick = view->getStartTick();
         if (state) state->setStartTick(_startTick);
+    }
+    else
+    {
+        osgViewer::GraphicsWindow* gw = dynamic_cast<osgViewer::GraphicsWindow*>(context);
+        if (gw)
+        {
+            _startTick = gw->getEventQueue()->getStartTick();
+            if (state) state->setStartTick(_startTick);
+        }
     }
 }
 
@@ -626,8 +649,7 @@ void Renderer::cull()
         if (view) sceneView->setFusionDistance(view->getFusionDistanceMode(), view->getFusionDistanceValue());
 
         osg::Stats* stats = sceneView->getCamera()->getStats();
-        osg::State* state = sceneView->getState();
-        const osg::FrameStamp* fs = state->getFrameStamp();
+        const osg::FrameStamp* fs = sceneView->getFrameStamp();
         unsigned int frameNumber = fs ? fs->getFrameNumber() : 0;
 
         // do cull traversal
@@ -639,6 +661,7 @@ void Renderer::cull()
         osg::Timer_t afterCullTick = osg::Timer::instance()->tick();
 
 #if 0
+        osg::State* state = sceneView->getState();
         if (sceneView->getDynamicObjectCount()==0 && state->getDynamicObjectRenderingCompletedCallback())
         {
             // OSG_NOTICE<<"Completed in cull"<<std::endl;
@@ -895,7 +918,7 @@ void Renderer::operator () (osg::Object* object)
     osg::GraphicsContext* context = dynamic_cast<osg::GraphicsContext*>(object);
     if (context) operator()(context);
 
-    osg::Camera* camera = dynamic_cast<osg::Camera*>(object);
+    osg::Camera* camera =object->asCamera();
     if (camera) cull();
 }
 

@@ -42,7 +42,7 @@ void GLObjectsVisitor::apply(osg::Node& node)
 
     traverse(node);
 
-    bool programSetAfter = _renderInfo.getState()->getLastAppliedProgramObject()!=0;
+    bool programSetAfter = _renderInfo.getState()!=0 && _renderInfo.getState()->getLastAppliedProgramObject()!=0;
     if (programSetBefore && !programSetAfter)
     {
         osg::State* state = _renderInfo.getState();
@@ -181,12 +181,14 @@ void GLObjectsVisitor::apply(osg::StateSet& stateset)
 //
 
 GLObjectsOperation::GLObjectsOperation(GLObjectsVisitor::Mode mode):
+    osg::Referenced(true),
     osg::GraphicsOperation("GLObjectOperation",false),
     _mode(mode)
 {
 }
 
 GLObjectsOperation::GLObjectsOperation(osg::Node* subgraph, GLObjectsVisitor::Mode mode):
+    osg::Referenced(true),
     osg::GraphicsOperation("GLObjectOperation",false),
     _subgraph(subgraph),
     _mode(mode)

@@ -227,6 +227,8 @@ struct SnapImage : public osg::Camera::DrawCallback
     mutable osg::ref_ptr<osg::Image>    _image;
 };
 
+
+
 struct SnapeImageHandler : public osgGA::GUIEventHandler
 {
 
@@ -234,7 +236,7 @@ struct SnapeImageHandler : public osgGA::GUIEventHandler
         _key(key),
         _snapImage(si) {}
 
-    bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
+    bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
     {
         if (ea.getHandled()) return false;
 
@@ -242,6 +244,18 @@ struct SnapeImageHandler : public osgGA::GUIEventHandler
         {
             case(osgGA::GUIEventAdapter::KEYUP):
             {
+                if (ea.getKey() == 'o' )
+                {
+                    osgViewer::View* view = dynamic_cast<osgViewer::View*>(&aa);
+                    osg::Node* node = view ? view->getSceneData() : 0;
+                    if (node)
+                    {
+                        osgDB::writeNodeFile(*node, "hud.osgt");
+                        osgDB::writeNodeFile(*node, "hud.osgb");
+                    }
+                    return true;
+                }
+
                 if (ea.getKey() == _key)
                 {
                     osg::notify(osg::NOTICE)<<"event handler"<<std::endl;
@@ -270,10 +284,10 @@ int main( int argc, char **argv )
 
 
     // read the scene from the list of file specified commandline args.
-    osg::ref_ptr<osg::Node> scene = osgDB::readNodeFiles(arguments);
+    osg::ref_ptr<osg::Node> scene = osgDB::readRefNodeFiles(arguments);
 
     // if not loaded assume no arguments passed in, try use default model instead.
-    if (!scene) scene = osgDB::readNodeFile("dumptruck.osgt");
+    if (!scene) scene = osgDB::readRefNodeFile("dumptruck.osgt");
 
 
     if (!scene)
@@ -306,7 +320,7 @@ int main( int argc, char **argv )
         viewer.addSlave(hudCamera, false);
 
         // set the scene to render
-        viewer.setSceneData(scene.get());
+        viewer.setSceneData(scene);
 
         return viewer.run();
 
@@ -320,7 +334,7 @@ int main( int argc, char **argv )
         osgViewer::View* view = new osgViewer::View;
         viewer.addView(view);
 
-        view->setSceneData(scene.get());
+        view->setSceneData(scene);
         view->setUpViewAcrossAllScreens();;
         view->setCameraManipulator(new osgGA::TrackballManipulator);
 
@@ -358,14 +372,14 @@ int main( int argc, char **argv )
         viewer.getCamera()->setFinalDrawCallback(finalDrawCallback);
         viewer.addEventHandler(new SnapeImageHandler('f',finalDrawCallback));
 
-        osg::ref_ptr<osg::Group> group  = new osg::Group;
+        osg::ref_ptr<osg::Group> group = new osg::Group;
 
         // add the HUD subgraph.
-        if (scene.valid()) group->addChild(scene.get());
+        if (scene.valid()) group->addChild(scene);
         group->addChild(createHUD());
 
         // set the scene to render
-        viewer.setSceneData(group.get());
+        viewer.setSceneData(group);
 
         return viewer.run();
     }

@@ -33,18 +33,18 @@ class Logos: public osg::Drawable
             last_position
         };
 
-        struct logosCullCallback : public osg::Drawable::CullCallback
+        struct logosCullCallback : public osg::DrawableCullCallback
         {
             virtual bool cull(osg::NodeVisitor *visitor, osg::Drawable* drawable, osg::State*) const
             {
                 Logos *logos = dynamic_cast <Logos *>(drawable);
-                osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor *>(visitor);
+                osgUtil::CullVisitor *cv = visitor->asCullVisitor();
                 if (!cv) return true;
 
                 unsigned int contextID = cv->getState()!=0 ? cv->getState()->getContextID() : 0;
                 if(contextID != logos->getContextID())
                 {
-                    // logo not appropiate for window assigned to the cull visitor so cull it.
+                    // logo not appropriate for window assigned to the cull visitor so cull it.
                     return true;
                 }
 

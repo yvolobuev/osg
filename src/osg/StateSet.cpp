@@ -92,8 +92,8 @@ bool osg::isTextureMode(StateAttribute::GLMode mode)
 //
 bool StateSet::Callback::run(osg::Object* object, osg::Object* data)
 {
-    osg::StateSet* ss = dynamic_cast<osg::StateSet*>(object);
-    osg::NodeVisitor* nv = dynamic_cast<osg::NodeVisitor*>(data);
+    osg::StateSet* ss = object->asStateSet();
+    osg::NodeVisitor* nv = data->asNodeVisitor();
     if (ss && nv)
     {
         operator()(ss, nv);
@@ -310,7 +310,11 @@ int StateSet::compare(const StateSet& rhs,bool compareAttributeContents) const
     if (_uniformList.size()<rhs._uniformList.size()) return -1;
     if (_uniformList.size()>rhs._uniformList.size()) return 1;
 
-     // check render bin details
+    if (_defineList.size()<rhs._defineList.size()) return -1;
+    if (_defineList.size()>rhs._defineList.size()) return 1;
+
+
+    // check render bin details
 
     if ( _binMode < rhs._binMode ) return -1;
     else if ( _binMode > rhs._binMode ) return 1;
@@ -486,6 +490,28 @@ int StateSet::compare(const StateSet& rhs,bool compareAttributeContents) const
         if (rhs_uniform_itr!=rhs._uniformList.end()) return -1;
     }
     else if (rhs_uniform_itr == rhs._uniformList.end()) return 1;
+
+
+    // check defines.
+    DefineList::const_iterator lhs_define_itr = _defineList.begin();
+    DefineList::const_iterator rhs_define_itr = rhs._defineList.begin();
+    while (lhs_define_itr!=_defineList.end() && rhs_define_itr!=rhs._defineList.end())
+    {
+        if      (lhs_define_itr->first<rhs_define_itr->first) return -1;
+        else if (rhs_define_itr->first<lhs_define_itr->first) return 1;
+        if      (lhs_define_itr->second.first<rhs_define_itr->second.first) return -1;
+        else if (rhs_define_itr->second.first<lhs_define_itr->second.first) return 1;
+        if      (lhs_define_itr->second.second<rhs_define_itr->second.second) return -1;
+        else if (rhs_define_itr->second.second<lhs_define_itr->second.second) return 1;
+        ++lhs_define_itr;
+        ++rhs_define_itr;
+    }
+    if (lhs_define_itr==_defineList.end())
+    {
+        if (rhs_define_itr!=rhs._defineList.end()) return -1;
+    }
+    else if (rhs_define_itr == rhs._defineList.end()) return 1;
+
 
     return 0;
 }
@@ -1270,7 +1296,7 @@ void StateSet::setTextureAttributeAndModes(unsigned int unit,StateAttribute *att
             OSG_NOTICE<<"Warning: non texture attribute '"<<attribute->className()<<"' passed to setTextureAttributeAndModes(unit,attr,value), "<<std::endl;
             OSG_NOTICE<<"         assuming setAttributeAndModes(attr,value) instead."<<std::endl;
             OSG_NOTICE<<"         please change calling code to use appropriate call."<<std::endl;
-            setAttribute(attribute,value);
+            setAttributeAndModes(attribute,value);
         }
     }
 }
@@ -1780,7 +1806,7 @@ void StateSet::runUpdateCallbacks(osg::NodeVisitor* nv)
             uitr != _uniformList.end();
             ++uitr)
         {
-            Uniform::Callback* callback = uitr->second.first->getUpdateCallback();
+            UniformCallback* callback = uitr->second.first->getUpdateCallback();
             if (callback) (*callback)(uitr->second.first.get(),nv);
         }
     }
@@ -1843,7 +1869,7 @@ void StateSet::runEventCallbacks(osg::NodeVisitor* nv)
             uitr != _uniformList.end();
             ++uitr)
         {
-            Uniform::Callback* callback = uitr->second.first->getEventCallback();
+            UniformCallback* callback = uitr->second.first->getEventCallback();
             if (callback) (*callback)(uitr->second.first.get(),nv);
         }
     }

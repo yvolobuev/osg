@@ -679,7 +679,7 @@ void GraphicsWindowX11::init()
             return;
         }
 
-        OSG_NOTICE<<"GraphicsWindowX11::init() - eglInitialize() succeded eglMajorVersion="<<eglMajorVersion<<" iMinorVersion="<<eglMinorVersion<<std::endl;
+        OSG_NOTICE<<"GraphicsWindowX11::init() - eglInitialize() succeeded eglMajorVersion="<<eglMajorVersion<<" iMinorVersion="<<eglMinorVersion<<std::endl;
 
    #else
         // Query for GLX extension
@@ -903,7 +903,7 @@ bool GraphicsWindowX11::createWindow()
         // we have a modern X11 server so assume we need the do the full screen hack.
         if (netWMStateAtom != None && netWMStateFullscreenAtom != None)
         {
-            // artifically reduce the initial window size so that the windowing
+            // artificially reduce the initial window size so that the windowing
             // system has a size to go back to when toggling off full screen,
             // we don't have to worry about the window being initially smaller as the
             // setWindowDecoration(..) implementation with enable full screen for us
@@ -1220,6 +1220,7 @@ bool GraphicsWindowX11::checkEvents()
     int windowY = _traits->y;
     int windowWidth = _traits->width;
     int windowHeight = _traits->height;
+    bool needNewWindowSize = false;
 
     Time firstEventTime = 0;
 
@@ -1275,6 +1276,7 @@ bool GraphicsWindowX11::checkEvents()
                     windowWidth = ev.xconfigure.width;
                     windowHeight = ev.xconfigure.height;
                 }
+                needNewWindowSize = true;
 
                 break;
             }
@@ -1294,6 +1296,7 @@ bool GraphicsWindowX11::checkEvents()
                     windowWidth = watt.width;
                     windowHeight = watt.height;
                 }
+                needNewWindowSize = true;
 
                 break;
             }
@@ -1552,6 +1555,7 @@ bool GraphicsWindowX11::checkEvents()
 
 
     // get window geometry relative to root window/screen
+    if (needNewWindowSize)
     {
         XWindowAttributes watt;
         Window child_return;

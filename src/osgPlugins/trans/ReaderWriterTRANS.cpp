@@ -96,7 +96,7 @@ class ReaderWriterTRANS : public osgDB::ReaderWriter
 public:
     ReaderWriterTRANS()
     {
-        supportsExtension(EXTENSION_NAME,"Translation Psuedo loader.");
+        supportsExtension(EXTENSION_NAME,"Translation Pseudo loader.");
     }
 
     virtual const char* className() const { return "translation pseudo-loader"; }
@@ -139,7 +139,7 @@ public:
         }
 
         // recursively load the subfile.
-        osg::Node *node = osgDB::readNodeFile( subFileName, options );
+        osg::ref_ptr<osg::Node> node = osgDB::readRefNodeFile( subFileName, options );
         if( !node )
         {
             // propagate the read failure upwards
@@ -147,7 +147,7 @@ public:
             return ReadResult::FILE_NOT_HANDLED;
         }
 
-        osg::MatrixTransform *xform = new osg::MatrixTransform;
+        osg::ref_ptr<osg::MatrixTransform> xform = new osg::MatrixTransform;
         xform->setDataVariance( osg::Object::STATIC );
         xform->setMatrix( osg::Matrix::translate( tx, ty, tz ) );
         xform->addChild( node );

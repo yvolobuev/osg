@@ -235,10 +235,6 @@ void Texture2DArray::apply(State& state) const
     // current OpenGL context.
     const unsigned int contextID = state.getContextID();
 
-    Texture::TextureObjectManager* tom = Texture::getTextureObjectManager(contextID).get();
-    ElapsedTime elapsedTime(&(tom->getApplyTime()));
-    tom->getNumberApplied()++;
-
     const GLExtensions* extensions = state.get<GLExtensions>();
 
     // if not supported, then return
@@ -268,7 +264,7 @@ void Texture2DArray::apply(State& state) const
 
             if (!textureObject->match(GL_TEXTURE_2D_ARRAY_EXT, new_numMipmapLevels, _internalFormat, new_width, new_height, textureDepth, _borderWidth))
             {
-                Texture::releaseTextureObject(contextID, _textureObjectBuffer[contextID].get());
+                _textureObjectBuffer[contextID]->release();
                 _textureObjectBuffer[contextID] = 0;
                 textureObject = 0;
             }
@@ -315,7 +311,7 @@ void Texture2DArray::apply(State& state) const
     else if (_subloadCallback.valid())
     {
         // generate texture (i.e. glGenTexture) and apply parameters
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(this, contextID, GL_TEXTURE_2D_ARRAY_EXT);
+        textureObject = generateAndAssignTextureObject(contextID, GL_TEXTURE_2D_ARRAY_EXT);
         textureObject->bind();
         applyTexParameters(GL_TEXTURE_2D_ARRAY_EXT, state);
         _subloadCallback->load(*this,state);
@@ -333,14 +329,12 @@ void Texture2DArray::apply(State& state) const
         computeRequiredTextureDimensions(state,*_images[0],_textureWidth, _textureHeight, _numMipmapLevels);
 
         // create texture object
-        textureObject = generateTextureObject(
-                this, contextID, GL_TEXTURE_2D_ARRAY_EXT,_numMipmapLevels, _internalFormat, _textureWidth, _textureHeight, textureDepth,0);
+        textureObject = generateAndAssignTextureObject(
+                    contextID, GL_TEXTURE_2D_ARRAY_EXT,_numMipmapLevels, _internalFormat, _textureWidth, _textureHeight, textureDepth,0);
 
         // bind texture
         textureObject->bind();
         applyTexParameters(GL_TEXTURE_2D_ARRAY_EXT, state);
-
-        _textureObjectBuffer[contextID] = textureObject;
 
         // First we need to allocate the texture memory
         int sourceFormat = _sourceFormat ? _sourceFormat : _internalFormat;
@@ -369,7 +363,7 @@ void Texture2DArray::apply(State& state) const
 
         // For certain we have to manually allocate memory for mipmaps if images are compressed
         // if not allocated OpenGL will produce errors on mipmap upload.
-        // I have not tested if this is neccessary for plain texture formats but
+        // I have not tested if this is necessary for plain texture formats but
         // common sense suggests its required as well.
         if( _min_filter != LINEAR && _min_filter != NEAREST && _images[0]->isMipmap() )
         {
@@ -426,8 +420,8 @@ void Texture2DArray::apply(State& state) const
     else if ( (_textureWidth > 0) && (_textureHeight > 0) && (_textureDepth > 0) && (_internalFormat!=0) )
     {
         // generate texture
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(
-                this, contextID, GL_TEXTURE_2D_ARRAY_EXT,_numMipmapLevels,_internalFormat, _textureWidth, _textureHeight, _textureDepth,0);
+        textureObject = generateAndAssignTextureObject(
+                contextID, GL_TEXTURE_2D_ARRAY_EXT,_numMipmapLevels,_internalFormat, _textureWidth, _textureHeight, _textureDepth,0);
 
         textureObject->bind();
         applyTexParameters(GL_TEXTURE_2D_ARRAY_EXT,state);
@@ -632,7 +626,7 @@ void Texture2DArray::copyTexSubImage2DArray(State& state, int xoffset, int yoffs
     }
     else
     {
-        OSG_WARN<<"Warning: Texture2DArray::copyTexSubImage2DArray(..) failed, cannot not copy to a non existant texture."<<std::endl;
+        OSG_WARN<<"Warning: Texture2DArray::copyTexSubImage2DArray(..) failed, cannot not copy to a non existent texture."<<std::endl;
     }
 }
 

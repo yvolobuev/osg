@@ -48,7 +48,7 @@ CompositeViewer::CompositeViewer(osg::ArgumentParser& arguments)
 
     arguments.getApplicationUsage()->addCommandLineOption("--run-on-demand","Set the run methods frame rate management to only rendering frames when required.");
     arguments.getApplicationUsage()->addCommandLineOption("--run-continuous","Set the run methods frame rate management to rendering frames continuously.");
-    arguments.getApplicationUsage()->addCommandLineOption("--run-max-frame-rate","Set the run methods maximum permissable frame rate, 0.0 is default and switching off frame rate capping.");
+    arguments.getApplicationUsage()->addCommandLineOption("--run-max-frame-rate","Set the run methods maximum permissible frame rate, 0.0 is default and switching off frame rate capping.");
 
 
     std::string filename;
@@ -135,7 +135,7 @@ CompositeViewer::~CompositeViewer()
 bool CompositeViewer::readConfiguration(const std::string& filename)
 {
     OSG_NOTICE<<"CompositeViewer::readConfiguration("<<filename<<")"<<std::endl;
-    osg::ref_ptr<osg::Object> obj = osgDB::readObjectFile(filename);
+    osg::ref_ptr<osg::Object> obj = osgDB::readRefObjectFile(filename);
     osgViewer::View * view = dynamic_cast<osgViewer::View *>(obj.get());
     if (view)
     {
@@ -362,7 +362,7 @@ void CompositeViewer::setReferenceTime(double time)
 {
     osg::Timer_t tick = osg::Timer::instance()->tick();
     double currentTime = osg::Timer::instance()->delta_s(_startTick, tick);
-    double delta_ticks = (time-currentTime)*(osg::Timer::instance()->getSecondsPerTick());
+    double delta_ticks = (time-currentTime)/(osg::Timer::instance()->getSecondsPerTick());
     if (delta_ticks>=0) tick += osg::Timer_t(delta_ticks);
     else tick -= osg::Timer_t(-delta_ticks);
 
@@ -639,13 +639,14 @@ void CompositeViewer::realize()
     }
 
 
-    startThreading();
-
     // initialize the global timer to be relative to the current time.
     osg::Timer::instance()->setStartTick();
 
     // pass on the start tick to all the associated eventqueues
     setStartTick(osg::Timer::instance()->getStartTick());
+
+    // configure threading.
+    setUpThreading();
 
     if (osg::DisplaySettings::instance()->getCompileContextsHint())
     {
@@ -821,7 +822,7 @@ void CompositeViewer::generateSlavePointerData(osg::Camera* camera, osgGA::GUIEv
                                         }
                                         else if (tcm)
                                         {
-                                            OSG_NOTICE<<"  Slave has matched texture cubemap"<<ba_itr->second._texture.get()<<", "<<ba_itr->second._face<<std::endl;
+                                            OSG_INFO<<"  Slave has matched texture cubemap"<<ba_itr->second._texture.get()<<", "<<ba_itr->second._face<<std::endl;
                                         }
                                         else
                                         {
@@ -852,6 +853,8 @@ void CompositeViewer::generatePointerData(osgGA::GUIEventAdapter& event)
 
     event.addPointerData(new osgGA::PointerData(gw, x, 0, gw->getTraits()->width,
                                                     y, 0, gw->getTraits()->height));
+
+    event.setMouseYOrientationAndUpdateCoords(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
 
     typedef std::vector<osg::Camera*> CameraVector;
     CameraVector activeCameras;
@@ -911,7 +914,10 @@ void CompositeViewer::reprojectPointerData(osgGA::GUIEventAdapter& source_event,
     dest_event.addPointerData(new osgGA::PointerData(gw, x, 0, gw->getTraits()->width,
                                                          y, 0, gw->getTraits()->height));
 
-    osg::Camera* camera = (source_event.getNumPointerData()>=2) ? dynamic_cast<osg::Camera*>(source_event.getPointerData(1)->object.get()) : 0;
+    dest_event.setMouseYOrientationAndUpdateCoords(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
+
+    osg::Object* object = (source_event.getNumPointerData()>=2) ? source_event.getPointerData(1)->object.get() : 0;
+    osg::Camera* camera = object ? object->asCamera() : 0;
     osg::Viewport* viewport = camera ? camera->getViewport() : 0;
 
     if (!viewport) return;
@@ -1015,17 +1021,6 @@ void CompositeViewer::eventTraversal()
                     reprojectPointerData(*_previousEvent, *event);
                 }
 
-#if 0
-                // assign topmost PointeData settings as the events X,Y and InputRange
-                osgGA::PointerData* pd = event->getPointerData(event->getNumPointerData()-1);
-                event->setX(pd->x);
-                event->setY(pd->y);
-                event->setInputRange(pd->xMin, pd->yMin, pd->xMax, pd->yMax);
-                event->setMouseYOrientation(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
-#else
-                event->setMouseYOrientationAndUpdateCoords(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
-#endif
-
                 _previousEvent = event;
 
                 break;
@@ -1036,7 +1031,8 @@ void CompositeViewer::eventTraversal()
         }
 
         osgGA::PointerData* pd = event->getNumPointerData()>0 ? event->getPointerData(event->getNumPointerData()-1) : 0;
-        osg::Camera* camera = pd ? dynamic_cast<osg::Camera*>(pd->object.get()) : 0;
+        osg::Object* object = pd ? pd->object.get() : 0;
+        osg::Camera* camera = object ? object->asCamera() : 0;
         osgViewer::View* view = camera ? dynamic_cast<osgViewer::View*>(camera->getView()) : 0;
 
         if (!view)
@@ -1117,8 +1113,20 @@ void CompositeViewer::eventTraversal()
             es->getEventQueue()->takeEvents(viewEventsMap[view], cutOffTime);
         }
 
-        // generate frame event
-        view->getEventQueue()->frame( getFrameStamp()->getReferenceTime() );
+        // create a frame event for the new frame.
+        {
+            osg::ref_ptr<osgGA::GUIEventAdapter> event = view->getEventQueue()->frame( getFrameStamp()->getReferenceTime() );
+
+            if (!_previousEvent || _previousEvent->getNumPointerData()<2)
+            {
+                generatePointerData(*event);
+            }
+            else
+            {
+                reprojectPointerData(*_previousEvent, *event);
+            }
+        }
+
 
         view->getEventQueue()->takeEvents(viewEventsMap[view], cutOffTime);
     }

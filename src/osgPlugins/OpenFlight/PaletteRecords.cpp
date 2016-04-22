@@ -220,7 +220,15 @@ protected:
         material->setDiffuse (osg::Material::FRONT_AND_BACK,osg::Vec4(diffuse,alpha));
         material->setSpecular(osg::Material::FRONT_AND_BACK,osg::Vec4(specular,alpha));
         material->setEmission(osg::Material::FRONT_AND_BACK,osg::Vec4(emissive,alpha));
-        material->setShininess(osg::Material::FRONT_AND_BACK,shininess);
+
+        if (shininess>=0.0f)
+        {
+            material->setShininess(osg::Material::FRONT_AND_BACK,shininess);
+        }
+        else
+        {
+            OSG_INFO<<"Warning: OpenFlight shininess value out of range: "<<shininess<<std::endl;
+        }
 
         MaterialPool* mp = document.getOrCreateMaterialPool();
         (*mp)[index] = material;
@@ -266,7 +274,15 @@ protected:
             material->setDiffuse (osg::Material::FRONT_AND_BACK,osg::Vec4(diffuse,alpha));
             material->setSpecular(osg::Material::FRONT_AND_BACK,osg::Vec4(specular,alpha));
             material->setEmission(osg::Material::FRONT_AND_BACK,osg::Vec4(emissive,alpha));
-            material->setShininess(osg::Material::FRONT_AND_BACK,shininess);
+
+            if (shininess>=0.0f)
+            {
+                material->setShininess(osg::Material::FRONT_AND_BACK,shininess);
+            }
+            else
+            {
+                OSG_INFO<<"Warning: OpenFlight shininess value out of range: "<<shininess<<std::endl;
+            }
 
             MaterialPool* mp = document.getOrCreateMaterialPool();
             (*mp)[i] = material;
@@ -330,7 +346,7 @@ protected:
 
         // Read attribute file
         std::string attrname = filename + ".attr";
-        osg::ref_ptr<AttrData> attr = dynamic_cast<AttrData*>(osgDB::readObjectFile(attrname,document.getOptions()));
+        osg::ref_ptr<AttrData> attr = osgDB::readRefFile<AttrData>(attrname,document.getOptions());
         if (attr.valid())
         {
             // Wrap mode
@@ -883,7 +899,7 @@ protected:
                 std::string vertexProgramFilePath = osgDB::findDataFile(vertexProgramFilename,document.getOptions());
                 if (!vertexProgramFilePath.empty())
                 {
-                    osg::Shader* vertexShader = osg::Shader::readShaderFile(osg::Shader::VERTEX, vertexProgramFilePath);
+                    osg::ref_ptr<osg::Shader> vertexShader = osgDB::readRefShaderFile(osg::Shader::VERTEX, vertexProgramFilePath);
                     if (vertexShader)
                         program->addShader( vertexShader );
                 }
@@ -897,7 +913,7 @@ protected:
                 std::string fragmentProgramFilePath = osgDB::findDataFile(fragmentProgramFilename,document.getOptions());
                 if (!fragmentProgramFilePath.empty())
                 {
-                    osg::Shader* fragmentShader = osg::Shader::readShaderFile(osg::Shader::FRAGMENT, fragmentProgramFilePath);
+                    osg::ref_ptr<osg::Shader> fragmentShader = osgDB::readRefShaderFile(osg::Shader::FRAGMENT, fragmentProgramFilePath);
                     if (fragmentShader)
                         program->addShader( fragmentShader );
                 }

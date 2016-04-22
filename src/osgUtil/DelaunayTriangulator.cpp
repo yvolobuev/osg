@@ -908,7 +908,7 @@ bool DelaunayTriangulator::triangulate()
             }
         }
     }
-    // dec 2006 we used to remove supertriangle vertices here, but then we cant strictly use the supertriangle
+    // dec 2006 we used to remove supertriangle vertices here, but then we can't strictly use the supertriangle
     // vertices to find intersections of constraints with terrain, so moved to later.
 
     OSG_INFO << "DelaunayTriangulator: finalizing and cleaning up structures\n";
@@ -993,7 +993,7 @@ bool DelaunayTriangulator::triangulate()
                                         {
                                             e1=titr->c(); e2=titr->a();
                                         }
-                                        else if (icut==3)
+                                        else
                                         {
                                             e1=titr->a(); e2=titr->b();
                                         }

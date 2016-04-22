@@ -40,23 +40,6 @@ static osg::ApplicationUsageProxy ViewerBase_e5(osg::ApplicationUsage::ENVIRONME
 
 using namespace osgViewer;
 
-
-struct InitRegistry
-{
-    InitRegistry()
-    {
-        osgDB::Registry::instance();
-    }
-
-    ~InitRegistry()
-    {
-        osgDB::DatabasePager::prototype() = 0;
-        osgDB::Registry::instance(true);
-    }
-};
-
-static InitRegistry s_InitRegistry;
-
 ViewerBase::ViewerBase():
     osg::Object(true)
 {
@@ -177,6 +160,17 @@ void ViewerBase::setUpThreading()
 
                 Scenes scenes;
                 getScenes(scenes);
+
+                for(Scenes::iterator scitr = scenes.begin();
+                    scitr != scenes.end();
+                    ++scitr)
+                {
+                    if ((*scitr)->getSceneData())
+                    {
+                        // update the scene graph so that it has enough GL object buffer memory for the graphics contexts that will be using it.
+                        (*scitr)->getSceneData()->resizeGLObjectBuffers(osg::DisplaySettings::instance()->getMaxNumberOfGraphicsContexts());
+                    }
+                }
             }
         }
     }

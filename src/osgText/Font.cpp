@@ -107,6 +107,7 @@ std::string osgText::findFontFile(const std::string& str)
     return std::string();
 }
 
+#ifdef OSG_PROVIDE_READFILE
 osgText::Font* osgText::readFontFile(const std::string& filename, const osgDB::ReaderWriter::Options* userOptions)
 {
     if (filename.empty()) return 0;
@@ -150,9 +151,9 @@ osgText::Font* osgText::readFontStream(std::istream& stream, const osgDB::Reader
     osgDB::ReaderWriter *reader = osgDB::Registry::instance()->getReaderWriterForExtension("ttf");
     if (reader == 0) return 0;
     osgDB::ReaderWriter::ReadResult rr = reader->readObject(stream, userOptions ? userOptions : localOptions.get());
-    if (rr.error())
+    if (!rr.success())
     {
-        OSG_WARN << rr.message() << std::endl;
+        OSG_WARN << rr.statusMessage() << std::endl;
         return 0;
     }
     if (!rr.validObject()) return 0;
@@ -167,6 +168,7 @@ osgText::Font* osgText::readFontStream(std::istream& stream, const osgDB::Reader
     if (object && object->referenceCount()==0) object->unref();
     return 0;
 }
+#endif
 
 osg::ref_ptr<Font> osgText::readRefFontFile(const std::string& filename, const osgDB::ReaderWriter::Options* userOptions)
 {
@@ -209,9 +211,9 @@ osg::ref_ptr<Font> osgText::readRefFontStream(std::istream& stream, const osgDB:
     osgDB::ReaderWriter *reader = osgDB::Registry::instance()->getReaderWriterForExtension("ttf");
     if (reader == 0) return 0;
     osgDB::ReaderWriter::ReadResult rr = reader->readObject(stream, userOptions ? userOptions : localOptions.get());
-    if (rr.error())
+    if (!rr.success())
     {
-        OSG_WARN << rr.message() << std::endl;
+        OSG_WARN << rr.statusMessage() << std::endl;
         return 0;
     }
     if (!rr.validObject()) return 0;
@@ -375,22 +377,32 @@ Glyph* Font::getGlyph(const FontResolution& fontRes, unsigned int charcode)
     else return 0;
 }
 
-Glyph3D* Font::getGlyph3D(unsigned int charcode)
+Glyph3D* Font::getGlyph3D(const FontResolution &fontRes, unsigned int charcode)
 {
+    if (!_implementation) return 0;
+
+    FontResolution fontResUsed(0,0);
+    if (_implementation->supportsMultipleFontResolutions()) fontResUsed = fontRes;
+
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_glyphMapMutex);
-        Glyph3DMap::iterator itr = _glyph3DMap.find(charcode);
-        if (itr!=_glyph3DMap.end()) return itr->second.get();
+        FontSizeGlyph3DMap::iterator itr = _sizeGlyph3DMap.find(fontResUsed);
+        if (itr!=_sizeGlyph3DMap.end())
+        {
+            Glyph3DMap& glyphmap = itr->second;
+            Glyph3DMap::iterator gitr = glyphmap.find(charcode);
+            if (gitr!=glyphmap.end()) return gitr->second.get();
+        }
     }
 
-    Glyph3D* glyph = _implementation.valid() ? _implementation->getGlyph3D(charcode) : 0;
+    Glyph3D* glyph = _implementation->getGlyph3D(fontResUsed, charcode);
     if (glyph)
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_glyphMapMutex);
-        _glyph3DMap[charcode] = glyph;
+        _sizeGlyph3DMap[fontResUsed][charcode] = glyph;
         return glyph;
     }
-    return 0;
+    else return 0;
 }
 
 void Font::setThreadSafeRefUnref(bool threadSafe)
@@ -435,9 +447,9 @@ void Font::releaseGLObjects(osg::State* state) const
     // const_cast<Font*>(this)->_sizeGlyphMap.clear();
 }
 
-osg::Vec2 Font::getKerning(unsigned int leftcharcode,unsigned int rightcharcode, KerningType kerningType)
+osg::Vec2 Font::getKerning(const FontResolution& fontRes, unsigned int leftcharcode, unsigned int rightcharcode, KerningType kerningType)
 {
-    if (_implementation.valid()) return _implementation->getKerning(leftcharcode,rightcharcode,kerningType);
+    if (_implementation.valid()) return _implementation->getKerning(fontRes, leftcharcode, rightcharcode, kerningType);
     else return osg::Vec2(0.0f,0.0f);
 }
 

@@ -1370,7 +1370,7 @@ void ReaderWriterP3DXML::parseVolume(osgPresentation::SlideShowConstructor& cons
     std::string vs;
     if (getProperty(cur, "vs", vs) || getProperty(cur, "VolumeSettings", vs))
     {
-        volumeData.volumeSettings = osgDB::readFile<osgVolume::VolumeSettings>(vs);
+        volumeData.volumeSettings = osgDB::readRefFile<osgVolume::VolumeSettings>(vs);
         if (volumeData.volumeSettings.valid())
         {
             OSG_NOTICE<<"VolumeSetting read "<<vs<<" "<<volumeData.volumeSettings.get()<<std::endl;
@@ -1438,12 +1438,12 @@ void ReaderWriterP3DXML::parseVolume(osgPresentation::SlideShowConstructor& cons
     std::string transferFunctionFile;
     if (getTrimmedProperty(cur, "tf", transferFunctionFile))
     {
-        volumeData.transferFunction = osgDB::readFile<osg::TransferFunction1D>(transferFunctionFile);
+        volumeData.transferFunction = osgDB::readRefFile<osg::TransferFunction1D>(transferFunctionFile);
     }
 
     if (getTrimmedProperty(cur, "tf-255", transferFunctionFile))
     {
-        volumeData.transferFunction = osgDB::readFile<osg::TransferFunction1D>(transferFunctionFile);
+        volumeData.transferFunction = osgDB::readRefFile<osg::TransferFunction1D>(transferFunctionFile);
     }
 
     if (getProperty(cur, "options", volumeData.options)) {}
@@ -2335,8 +2335,8 @@ void ReaderWriterP3DXML::parsePdfDocument(osgPresentation::SlideShowConstructor&
     osgPresentation::SlideShowConstructor::ScriptData scriptData;
     getProperties(cur, scriptData);
 
-    osg::Image* image = constructor.addInteractiveImage(cur->contents, positionData, imageData, scriptData);
-    osgWidget::PdfImage* pdfImage = dynamic_cast<osgWidget::PdfImage*>(image);
+    osg::ref_ptr<osg::Image> image = constructor.addInteractiveImage(cur->contents, positionData, imageData, scriptData);
+    osgWidget::PdfImage* pdfImage = dynamic_cast<osgWidget::PdfImage*>(image.get());
     if (pdfImage)
     {
         int numPages = pdfImage->getNumOfPages();
@@ -2567,7 +2567,7 @@ void ReaderWriterP3DXML::parseRunScriptFile(osgPresentation::SlideShowConstructo
     std::string function = "";
     getProperty(cur, "function", function);
 
-    osg::ref_ptr<osg::Script> script = osgDB::readFile<osg::Script>(cur->getTrimmedContents());
+    osg::ref_ptr<osg::Script> script = osgDB::readRefFile<osg::Script>(cur->getTrimmedContents());
     if (script.valid())
     {
         osg::ScriptEngine* se = constructor.getOrCreateScriptEngine(script->getLanguage());
@@ -2956,6 +2956,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterP3DXML::readNode(const std::string& 
     local_opt->getDatabasePathList().push_front(osgDB::getFilePath(fileName));
     local_opt->setFindFileCallback(new MyFindFileCallback);
     local_opt->setPluginStringData("filename",file);
+    local_opt->setPluginStringData("fullpath",fileName);
 
     osgDB::XmlNode::Input input;
     input.open(fileName);
@@ -2980,6 +2981,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterP3DXML::readNode(std::istream& fin, 
 osgDB::ReaderWriter::ReadResult ReaderWriterP3DXML::readNode(osgDB::XmlNode::Input& input, osgDB::ReaderWriter::Options* options) const
 {
     std::string fileName = options ? options->getPluginStringData("filename") : std::string();
+    std::string fullpath = options ? options->getPluginStringData("fullpath") : std::string();
     std::string extension = osgDB::getFileExtension(fileName);
     std::string fileNameSansExtension = osgDB::getNameLessExtension(fileName);
     std::string nestedExtension = osgDB::getFileExtension(fileNameSansExtension);
@@ -3085,6 +3087,9 @@ osgDB::ReaderWriter::ReadResult ReaderWriterP3DXML::readNode(osgDB::XmlNode::Inp
 
     if (presentation_node.valid())
     {
+        presentation_node->setUserValue("filename",fileName);
+        presentation_node->setUserValue("fullpath",fullpath);
+
         if (!options || options->getPluginStringData("P3D_EVENTHANDLER")!="none")
         {
             // if (!readOnlyHoldingPage && !readOnlyMainPresentation)

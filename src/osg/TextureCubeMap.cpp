@@ -199,10 +199,6 @@ void TextureCubeMap::apply(State& state) const
     // current OpenGL context.
     const unsigned int contextID = state.getContextID();
 
-    Texture::TextureObjectManager* tom = Texture::getTextureObjectManager(contextID).get();
-    ElapsedTime elapsedTime(&(tom->getApplyTime()));
-    tom->getNumberApplied()++;
-
     const GLExtensions* extensions = state.get<GLExtensions>();
 
     if (!extensions->isCubeMapSupported)
@@ -226,7 +222,7 @@ void TextureCubeMap::apply(State& state) const
 
             if (!textureObject->match(GL_TEXTURE_CUBE_MAP, new_numMipmapLevels, _internalFormat, new_width, new_height, 1, _borderWidth))
             {
-                Texture::releaseTextureObject(contextID, _textureObjectBuffer[contextID].get());
+                _textureObjectBuffer[contextID]->release();
                 _textureObjectBuffer[contextID] = 0;
                 textureObject = 0;
             }
@@ -259,7 +255,7 @@ void TextureCubeMap::apply(State& state) const
     }
     else if (_subloadCallback.valid())
     {
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(this, contextID,GL_TEXTURE_CUBE_MAP);
+        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_CUBE_MAP);
 
         textureObject->bind();
 
@@ -289,8 +285,8 @@ void TextureCubeMap::apply(State& state) const
             _textureWidth = _textureHeight = minimum( _textureWidth , _textureHeight );
         }
 
-        textureObject = generateTextureObject(
-                this, contextID,GL_TEXTURE_CUBE_MAP,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,0);
+        textureObject = generateAndAssignTextureObject(
+                contextID,GL_TEXTURE_CUBE_MAP,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,0);
 
         textureObject->bind();
 
@@ -315,8 +311,6 @@ void TextureCubeMap::apply(State& state) const
 
         }
 
-        _textureObjectBuffer[contextID] = textureObject;
-
         // unref image data?
         if (isSafeToUnrefImageData(state))
         {
@@ -333,8 +327,8 @@ void TextureCubeMap::apply(State& state) const
     }
     else if ( (_textureWidth!=0) && (_textureHeight!=0) && (_internalFormat!=0) )
     {
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(
-                this, contextID,GL_TEXTURE_CUBE_MAP,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,0);
+        textureObject = generateAndAssignTextureObject(
+                contextID,GL_TEXTURE_CUBE_MAP,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,0);
 
         textureObject->bind();
 
@@ -390,7 +384,7 @@ void TextureCubeMap::copyTexSubImageCubeMap(State& state, int face, int xoffset,
         if (!textureObject)
         {
             // failed to create texture object
-            OSG_NOTICE<<"Warning : failed to create TextureCubeMap texture obeject, copyTexSubImageCubeMap abondoned."<<std::endl;
+            OSG_NOTICE<<"Warning : failed to create TextureCubeMap texture obeject, copyTexSubImageCubeMap abandoned."<<std::endl;
             return;
         }
 

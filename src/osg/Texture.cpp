@@ -21,6 +21,7 @@
 #include <osg/FrameBufferObject>
 #include <osg/TextureRectangle>
 #include <osg/Texture1D>
+#include <osg/ContextData>
 
 #include <OpenThreads/ScopedLock>
 #include <OpenThreads/Mutex>
@@ -69,7 +70,9 @@ struct InternalPixelRelations
     GLenum type;
 };
 
+
 InternalPixelRelations sizedInternalFormats[] = {
+
       { GL_R8UI                                , GL_RED_INTEGER_EXT  , GL_UNSIGNED_BYTE                             }
     , { GL_R8I                                 , GL_RED_INTEGER_EXT  , GL_BYTE                                      }
     , { GL_R16UI                               , GL_RED_INTEGER_EXT  , GL_UNSIGNED_SHORT                            }
@@ -99,21 +102,10 @@ InternalPixelRelations sizedInternalFormats[] = {
     , { GL_RGBA32I_EXT                         , GL_RGBA_INTEGER_EXT , GL_INT                                       }
     , { GL_RGBA32UI_EXT                        , GL_RGBA_INTEGER_EXT , GL_UNSIGNED_INT                              }
 
-    , { GL_R8_SNORM                            , GL_RED              , GL_BYTE                                      }
-    , { GL_R16_SNORM                           , GL_RED              , GL_SHORT                                     }
-    , { GL_RG8_SNORM                           , GL_RG               , GL_BYTE                                      }
-    , { GL_RG16_SNORM                          , GL_RG               , GL_SHORT                                     }
-    , { GL_RGB8_SNORM                          , GL_RGB              , GL_BYTE                                      }
-    , { GL_RGB16_SNORM                         , GL_RGB              , GL_SHORT                                     }
-    , { GL_RGBA8_SNORM                         , GL_RGBA             , GL_BYTE                                      }
-
-    , { GL_SRGB8                               , GL_RGB              , GL_UNSIGNED_BYTE                             }
-    , { GL_SRGB8_ALPHA8                        , GL_RGBA             , GL_UNSIGNED_BYTE                             }
-
     , { GL_R8                                  , GL_RED              , GL_UNSIGNED_BYTE                             }
     , { GL_R16F                                , GL_RED              , GL_HALF_FLOAT                                }
-    , { GL_R16F                                , GL_RED              , GL_FLOAT                                     }
     , { GL_R32F                                , GL_RED              , GL_FLOAT                                     }
+    , { GL_R16F                                , GL_RED              , GL_FLOAT                                     }
     , { GL_RG8                                 , GL_RG               , GL_UNSIGNED_BYTE                             }
     , { GL_RG16F                               , GL_RG               , GL_HALF_FLOAT                                }
     , { GL_RG16F                               , GL_RG               , GL_FLOAT                                     }
@@ -125,10 +117,10 @@ InternalPixelRelations sizedInternalFormats[] = {
     , { GL_RGB4                                , GL_RGB              , GL_UNSIGNED_SHORT_4_4_4_4_REV                }
     , { GL_RGB5                                , GL_RGB              , GL_UNSIGNED_SHORT_5_5_5_1                    }
     , { GL_RGB5                                , GL_RGB              , GL_UNSIGNED_SHORT_1_5_5_5_REV                }
+    , { GL_RGB8                                , GL_RGB              , GL_UNSIGNED_BYTE                             }
     , { GL_RGB565                              , GL_RGB              , GL_UNSIGNED_BYTE                             }
     , { GL_RGB565                              , GL_RGB              , GL_UNSIGNED_SHORT_5_6_5                      }
     , { GL_RGB565                              , GL_RGB              , GL_UNSIGNED_SHORT_5_6_5_REV                  }
-    , { GL_RGB8                                , GL_RGB              , GL_UNSIGNED_BYTE                             }
  // , { GL_RGB9_E5                             , GL_RGB              , GL_UNSIGNED_INT_9_9_9_5,                     }
  // , { GL_RGB9_E5                             , GL_RGB              , GL_UNSIGNED_INT_5_9_9_9_REV,                 }
  // , { GL_RGB9_E5                             , GL_RGB              , GL_HALF_FLOAT                                }
@@ -140,24 +132,36 @@ InternalPixelRelations sizedInternalFormats[] = {
     , { GL_RGB10                               , GL_RGB              , GL_UNSIGNED_INT_10_10_10_2                   }
     , { GL_RGB12                               , GL_RGB              , GL_UNSIGNED_SHORT                            }
     , { GL_RGB16F_ARB                          , GL_RGB              , GL_HALF_FLOAT                                }
-    , { GL_RGB16F_ARB                          , GL_RGB              , GL_FLOAT                                     }
     , { GL_RGB32F_ARB                          , GL_RGB              , GL_FLOAT                                     }
+    , { GL_RGB16F_ARB                          , GL_RGB              , GL_FLOAT                                     }
 
+
+    , { GL_RGBA8                               , GL_RGBA             , GL_UNSIGNED_BYTE                             }
+    , { GL_RGB10_A2                            , GL_RGBA             , GL_UNSIGNED_INT_10_10_10_2                   }
+    , { GL_RGB10_A2                            , GL_RGBA             , GL_UNSIGNED_INT_2_10_10_10_REV               }
+    , { GL_RGBA12                              , GL_RGBA             , GL_UNSIGNED_SHORT                            }
+    , { GL_RGBA4                               , GL_RGBA             , GL_UNSIGNED_BYTE                             }
+    , { GL_RGBA4                               , GL_RGBA             , GL_UNSIGNED_SHORT_4_4_4_4                    }
+    , { GL_RGBA4                               , GL_RGBA             , GL_UNSIGNED_SHORT_4_4_4_4_REV                }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_BYTE                             }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_SHORT_5_5_5_1                    }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_SHORT_1_5_5_5_REV                }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_INT_10_10_10_2                   }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_INT_2_10_10_10_REV               }
-    , { GL_RGBA4                               , GL_RGBA             , GL_UNSIGNED_BYTE                             }
-    , { GL_RGBA4                               , GL_RGBA             , GL_UNSIGNED_SHORT_4_4_4_4                    }
-    , { GL_RGBA4                               , GL_RGBA             , GL_UNSIGNED_SHORT_4_4_4_4_REV                }
-    , { GL_RGBA8                               , GL_RGBA             , GL_UNSIGNED_BYTE                             }
-    , { GL_RGB10_A2                            , GL_RGBA             , GL_UNSIGNED_INT_10_10_10_2                   }
-    , { GL_RGB10_A2                            , GL_RGBA             , GL_UNSIGNED_INT_2_10_10_10_REV               }
-    , { GL_RGBA12                              , GL_RGBA             , GL_UNSIGNED_SHORT                            }
  // , { GL_RGBA16F                             , GL_RGBA             , GL_HALF_FLOAT                                }
  // , { GL_RGBA16F                             , GL_RGBA             , GL_FLOAT                                     }
  // , { GL_RGBA32F                             , GL_RGBA             , GL_FLOAT                                     }
+
+    , { GL_SRGB8                               , GL_RGB              , GL_UNSIGNED_BYTE                             }
+    , { GL_SRGB8_ALPHA8                        , GL_RGBA             , GL_UNSIGNED_BYTE                             }
+
+    , { GL_R8_SNORM                            , GL_RED              , GL_BYTE                                      }
+    , { GL_R16_SNORM                           , GL_RED              , GL_SHORT                                     }
+    , { GL_RG8_SNORM                           , GL_RG               , GL_BYTE                                      }
+    , { GL_RG16_SNORM                          , GL_RG               , GL_SHORT                                     }
+    , { GL_RGB8_SNORM                          , GL_RGB              , GL_BYTE                                      }
+    , { GL_RGB16_SNORM                         , GL_RGB              , GL_SHORT                                     }
+    , { GL_RGBA8_SNORM                         , GL_RGBA             , GL_BYTE                                      }
 };
 
 InternalPixelRelations sizedDepthAndStencilInternalFormats[] = {
@@ -245,6 +249,11 @@ void Texture::TextureObject::bind()
 {
     glBindTexture( _profile._target, _id);
     if (_set) _set->moveToBack(this);
+}
+
+void Texture::TextureObject::release()
+{
+    if (_set) _set->orphan(this);
 }
 
 void Texture::TextureObject::setAllocated(GLint     numMipmapLevels,
@@ -347,7 +356,7 @@ void Texture::TextureProfile::computeSize()
 //
 //  New texture object manager
 //
-Texture::TextureObjectSet::TextureObjectSet(TextureObjectManager* parent, const TextureProfile& profile):
+TextureObjectSet::TextureObjectSet(TextureObjectManager* parent, const Texture::TextureProfile& profile):
     _parent(parent),
     _contextID(parent->getContextID()),
     _profile(profile),
@@ -357,7 +366,7 @@ Texture::TextureObjectSet::TextureObjectSet(TextureObjectManager* parent, const 
 {
 }
 
-Texture::TextureObjectSet::~TextureObjectSet()
+TextureObjectSet::~TextureObjectSet()
 {
 #if 0
     OSG_NOTICE<<"TextureObjectSet::~TextureObjectSet(), _numOfTextureObjects="<<_numOfTextureObjects<<std::endl;
@@ -367,7 +376,7 @@ Texture::TextureObjectSet::~TextureObjectSet()
 #endif
 }
 
-bool Texture::TextureObjectSet::checkConsistency() const
+bool TextureObjectSet::checkConsistency() const
 {
     OSG_NOTICE<<"TextureObjectSet::checkConsistency()"<<std::endl;
     // check consistency of linked list.
@@ -381,7 +390,7 @@ bool Texture::TextureObjectSet::checkConsistency() const
         {
             if ((to->_next)->_previous != to)
             {
-                OSG_NOTICE<<"Texture::TextureObjectSet::checkConsistency() : Error (to->_next)->_previous != to "<<std::endl;
+                OSG_NOTICE<<"TextureObjectSet::checkConsistency() : Error (to->_next)->_previous != to "<<std::endl;
                 return false;
             }
         }
@@ -389,7 +398,7 @@ bool Texture::TextureObjectSet::checkConsistency() const
         {
             if (_tail != to)
             {
-                OSG_NOTICE<<"Texture::TextureObjectSet::checkConsistency() : Error _tail != to"<<std::endl;
+                OSG_NOTICE<<"TextureObjectSet::checkConsistency() : Error _tail != to"<<std::endl;
                 return false;
             }
         }
@@ -413,7 +422,7 @@ bool Texture::TextureObjectSet::checkConsistency() const
     return true;
 }
 
-void Texture::TextureObjectSet::handlePendingOrphandedTextureObjects()
+void TextureObjectSet::handlePendingOrphandedTextureObjects()
 {
     // OSG_NOTICE<<"handlePendingOrphandedTextureObjects()"<<_pendingOrphanedTextureObjects.size()<<std::endl;
 
@@ -421,11 +430,11 @@ void Texture::TextureObjectSet::handlePendingOrphandedTextureObjects()
 
     unsigned int numOrphaned = _pendingOrphanedTextureObjects.size();
 
-    for(TextureObjectList::iterator itr = _pendingOrphanedTextureObjects.begin();
+    for(Texture::TextureObjectList::iterator itr = _pendingOrphanedTextureObjects.begin();
         itr != _pendingOrphanedTextureObjects.end();
         ++itr)
     {
-        TextureObject* to = itr->get();
+        Texture::TextureObject* to = itr->get();
 
         _orphanedTextureObjects.push_back(to);
 
@@ -443,15 +452,15 @@ void Texture::TextureObjectSet::handlePendingOrphandedTextureObjects()
 }
 
 
-void Texture::TextureObjectSet::deleteAllTextureObjects()
+void TextureObjectSet::deleteAllTextureObjects()
 {
-    // OSG_NOTICE<<"Texture::TextureObjectSet::deleteAllTextureObjects()"<<std::endl;
+    // OSG_NOTICE<<"TextureObjectSet::deleteAllTextureObjects()"<<std::endl;
 
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
         if (!_pendingOrphanedTextureObjects.empty())
         {
-            // OSG_NOTICE<<"Texture::TextureObjectSet::flushDeletedTextureObjects(..) handling orphans"<<std::endl;
+            // OSG_NOTICE<<"TextureObjectSet::flushDeletedTextureObjects(..) handling orphans"<<std::endl;
             handlePendingOrphandedTextureObjects();
         }
     }
@@ -460,10 +469,10 @@ void Texture::TextureObjectSet::deleteAllTextureObjects()
 
     // detect all the active texture objects from their Textures
     unsigned int numOrphaned = 0;
-    TextureObject* to = _head;
+    Texture::TextureObject* to = _head;
     while(to!=0)
     {
-        ref_ptr<TextureObject> glto = to;
+        ref_ptr<Texture::TextureObject> glto = to;
 
         to = to->_next;
 
@@ -489,14 +498,14 @@ void Texture::TextureObjectSet::deleteAllTextureObjects()
     // OSG_NOTICE<<"done GLBufferObjectSet::deleteAllGLBufferObjects()"<<std::endl;
 }
 
-void Texture::TextureObjectSet::discardAllTextureObjects()
+void TextureObjectSet::discardAllTextureObjects()
 {
-    // OSG_NOTICE<<"Texture::TextureObjectSet::discardAllTextureObjects()."<<std::endl;
+    // OSG_NOTICE<<"TextureObjectSet::discardAllTextureObjects()."<<std::endl;
 
-    TextureObject* to = _head;
+    Texture::TextureObject* to = _head;
     while(to!=0)
     {
-        ref_ptr<TextureObject> glto = to;
+        ref_ptr<Texture::TextureObject> glto = to;
 
         to = to->_next;
 
@@ -524,19 +533,19 @@ void Texture::TextureObjectSet::discardAllTextureObjects()
     _parent->getNumberDeleted() += numDeleted;
 }
 
-void Texture::TextureObjectSet::flushAllDeletedTextureObjects()
+void TextureObjectSet::flushAllDeletedTextureObjects()
 {
-    // OSG_NOTICE<<"Texture::TextureObjectSet::flushAllDeletedTextureObjects()"<<std::endl;
+    // OSG_NOTICE<<"TextureObjectSet::flushAllDeletedTextureObjects()"<<std::endl;
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
         if (!_pendingOrphanedTextureObjects.empty())
         {
-            // OSG_NOTICE<<"Texture::TextureObjectSet::flushDeletedTextureObjects(..) handling orphans"<<std::endl;
+            // OSG_NOTICE<<"TextureObjectSet::flushDeletedTextureObjects(..) handling orphans"<<std::endl;
             handlePendingOrphandedTextureObjects();
         }
     }
 
-    for(TextureObjectList::iterator itr = _orphanedTextureObjects.begin();
+    for(Texture::TextureObjectList::iterator itr = _orphanedTextureObjects.begin();
         itr != _orphanedTextureObjects.end();
         ++itr)
     {
@@ -558,16 +567,16 @@ void Texture::TextureObjectSet::flushAllDeletedTextureObjects()
     _orphanedTextureObjects.clear();
 }
 
-void Texture::TextureObjectSet::discardAllDeletedTextureObjects()
+void TextureObjectSet::discardAllDeletedTextureObjects()
 {
-    // OSG_NOTICE<<"Texture::TextureObjectSet::discardAllDeletedTextureObjects()"<<std::endl;
+    // OSG_NOTICE<<"TextureObjectSet::discardAllDeletedTextureObjects()"<<std::endl;
 
     // clean up the pending orphans.
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
         if (!_pendingOrphanedTextureObjects.empty())
         {
-            // OSG_NOTICE<<"Texture::TextureObjectSet::flushDeletedTextureObjects(..) handling orphans"<<std::endl;
+            // OSG_NOTICE<<"TextureObjectSet::flushDeletedTextureObjects(..) handling orphans"<<std::endl;
             handlePendingOrphandedTextureObjects();
         }
     }
@@ -579,7 +588,7 @@ void Texture::TextureObjectSet::discardAllDeletedTextureObjects()
     // update the TextureObjectManager's running total of current pool size
     _parent->getCurrTexturePoolSize() -= numDiscarded*_profile._size;
 
-    // update the number of active and orphaned TextureOjects
+    // update the number of active and orphaned TextureObjects
     _parent->getNumberOrphanedTextureObjects() -= numDiscarded;
     _parent->getNumberDeleted() += numDiscarded;
 
@@ -587,15 +596,15 @@ void Texture::TextureObjectSet::discardAllDeletedTextureObjects()
     _orphanedTextureObjects.clear();
 }
 
-void Texture::TextureObjectSet::flushDeletedTextureObjects(double /*currentTime*/, double& availableTime)
+void TextureObjectSet::flushDeletedTextureObjects(double /*currentTime*/, double& availableTime)
 {
-    // OSG_NOTICE<<"Texture::TextureObjectSet::flushDeletedTextureObjects(..)"<<std::endl;
+    // OSG_NOTICE<<"TextureObjectSet::flushDeletedTextureObjects(..)"<<std::endl;
 
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
         if (!_pendingOrphanedTextureObjects.empty())
         {
-            // OSG_NOTICE<<"Texture::TextureObjectSet::flushDeletedTextureObjects(..) handling orphans"<<std::endl;
+            // OSG_NOTICE<<"TextureObjectSet::flushDeletedTextureObjects(..) handling orphans"<<std::endl;
             handlePendingOrphandedTextureObjects();
         }
     }
@@ -623,11 +632,11 @@ void Texture::TextureObjectSet::flushDeletedTextureObjects(double /*currentTime*
         _orphanedTextureObjects.size();
 
     OSG_INFO<<"_parent->getCurrTexturePoolSize()="<<_parent->getCurrTexturePoolSize() <<" _parent->getMaxTexturePoolSize()="<< _parent->getMaxTexturePoolSize()<<std::endl;
-    OSG_INFO<<"Looking to reclaim "<<sizeRequired<<", going to look to remove "<<maxNumObjectsToDelete<<" from "<<_orphanedTextureObjects.size()<<" orhpans"<<std::endl;
+    OSG_INFO<<"Looking to reclaim "<<sizeRequired<<", going to look to remove "<<maxNumObjectsToDelete<<" from "<<_orphanedTextureObjects.size()<<" orphans"<<std::endl;
 
     ElapsedTime timer;
 
-    TextureObjectList::iterator itr = _orphanedTextureObjects.begin();
+    Texture::TextureObjectList::iterator itr = _orphanedTextureObjects.begin();
     for(;
         itr != _orphanedTextureObjects.end() && timer.elapsedTime()<availableTime && numDeleted<maxNumObjectsToDelete;
         ++itr)
@@ -650,20 +659,20 @@ void Texture::TextureObjectSet::flushDeletedTextureObjects(double /*currentTime*
 
     _parent->getCurrTexturePoolSize() -= numDeleted*_profile._size;
 
-    // update the number of active and orphaned TextureOjects
+    // update the number of active and orphaned TextureObjects
     _parent->getNumberOrphanedTextureObjects() -= numDeleted;
     _parent->getNumberDeleted() += numDeleted;
 
     availableTime -= timer.elapsedTime();
 }
 
-bool Texture::TextureObjectSet::makeSpace(unsigned int& size)
+bool TextureObjectSet::makeSpace(unsigned int& size)
 {
     {
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
         if (!_pendingOrphanedTextureObjects.empty())
         {
-            // OSG_NOTICE<<"Texture::TextureObjectSet::Texture::TextureObjectSet::makeSpace(..) handling orphans"<<std::endl;
+            // OSG_NOTICE<<"TextureObjectSet::TextureObjectSet::makeSpace(..) handling orphans"<<std::endl;
             handlePendingOrphandedTextureObjects();
         }
     }
@@ -680,10 +689,10 @@ bool Texture::TextureObjectSet::makeSpace(unsigned int& size)
     return size==0;
 }
 
-Texture::TextureObject* Texture::TextureObjectSet::takeFromOrphans(Texture* texture)
+osg::ref_ptr<Texture::TextureObject> TextureObjectSet::takeFromOrphans(Texture* texture)
 {
     // take front of orphaned list.
-    ref_ptr<TextureObject> to = _orphanedTextureObjects.front();
+    ref_ptr<Texture::TextureObject> to = _orphanedTextureObjects.front();
 
     // remove from orphan list.
     _orphanedTextureObjects.pop_front();
@@ -691,7 +700,7 @@ Texture::TextureObject* Texture::TextureObjectSet::takeFromOrphans(Texture* text
     // assign to new texture
     to->setTexture(texture);
 
-    // update the number of active and orphaned TextureOjects
+    // update the number of active and orphaned TextureObjects
     _parent->getNumberOrphanedTextureObjects() -= 1;
     _parent->getNumberActiveTextureObjects() += 1;
 
@@ -700,11 +709,11 @@ Texture::TextureObject* Texture::TextureObjectSet::takeFromOrphans(Texture* text
 
     OSG_INFO<<"Reusing orphaned TextureObject, _numOfTextureObjects="<<_numOfTextureObjects<<std::endl;
 
-    return to.release();
+    return to;
 }
 
 
-Texture::TextureObject* Texture::TextureObjectSet::takeOrGenerate(Texture* texture)
+osg::ref_ptr<Texture::TextureObject> TextureObjectSet::takeOrGenerate(Texture* texture)
 {
     // see if we can recyle TextureObject from the orphan list
     {
@@ -733,7 +742,7 @@ Texture::TextureObject* Texture::TextureObjectSet::takeOrGenerate(Texture* textu
 
         OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
 
-        ref_ptr<TextureObject> to = _head;
+        ref_ptr<Texture::TextureObject> to = _head;
 
         ref_ptr<Texture> original_texture = to->getTexture();
 
@@ -752,7 +761,7 @@ Texture::TextureObject* Texture::TextureObjectSet::takeOrGenerate(Texture* textu
         // assign to new texture
         to->setTexture(texture);
 
-        return to.release();
+        return to;
     }
 
     //
@@ -761,7 +770,7 @@ Texture::TextureObject* Texture::TextureObjectSet::takeOrGenerate(Texture* textu
     GLuint id;
     glGenTextures( 1L, &id );
 
-    TextureObject* to = new Texture::TextureObject(const_cast<Texture*>(texture),id,_profile);
+    osg::ref_ptr<Texture::TextureObject> to = new Texture::TextureObject(const_cast<Texture*>(texture),id,_profile);
     to->_set = this;
     ++_numOfTextureObjects;
 
@@ -769,14 +778,14 @@ Texture::TextureObject* Texture::TextureObjectSet::takeOrGenerate(Texture* textu
     _parent->getCurrTexturePoolSize() += _profile._size;
     _parent->getNumberActiveTextureObjects() += 1;
 
-    addToBack(to);
+    addToBack(to.get());
 
     OSG_INFO<<"Created new " << this << " TextureObject, _numOfTextureObjects "<<_numOfTextureObjects<<std::endl;
 
     return to;
 }
 
-void Texture::TextureObjectSet::moveToBack(Texture::TextureObject* to)
+void TextureObjectSet::moveToBack(Texture::TextureObject* to)
 {
 #if 0
     OSG_NOTICE<<"TextureObjectSet::moveToBack("<<to<<")"<<std::endl;
@@ -838,7 +847,7 @@ void Texture::TextureObjectSet::moveToBack(Texture::TextureObject* to)
     CHECK_CONSISTENCY
 }
 
-void Texture::TextureObjectSet::addToBack(Texture::TextureObject* to)
+void TextureObjectSet::addToBack(Texture::TextureObject* to)
 {
 #if 0
     OSG_NOTICE<<"TextureObjectSet::addToBack("<<to<<")"<<std::endl;
@@ -871,7 +880,7 @@ void Texture::TextureObjectSet::addToBack(Texture::TextureObject* to)
     CHECK_CONSISTENCY
 }
 
-void Texture::TextureObjectSet::orphan(Texture::TextureObject* to)
+void TextureObjectSet::orphan(Texture::TextureObject* to)
 {
     // OSG_NOTICE<<"TextureObjectSet::orphan("<<to<<")"<<std::endl;
 
@@ -893,7 +902,7 @@ void Texture::TextureObjectSet::orphan(Texture::TextureObject* to)
 #endif
 }
 
-void Texture::TextureObjectSet::remove(Texture::TextureObject* to)
+void TextureObjectSet::remove(Texture::TextureObject* to)
 {
     if (to->_previous!=0)
     {
@@ -920,7 +929,7 @@ void Texture::TextureObjectSet::remove(Texture::TextureObject* to)
     to->_previous = 0;
 }
 
-void Texture::TextureObjectSet::moveToSet(TextureObject* to, TextureObjectSet* set)
+void TextureObjectSet::moveToSet(Texture::TextureObject* to, TextureObjectSet* set)
 {
     if (set==this) return;
     if (!set) return;
@@ -935,10 +944,10 @@ void Texture::TextureObjectSet::moveToSet(TextureObject* to, TextureObjectSet* s
     set->addToBack(to);
 }
 
-unsigned int Texture::TextureObjectSet::computeNumTextureObjectsInList() const
+unsigned int TextureObjectSet::computeNumTextureObjectsInList() const
 {
     unsigned int num=0;
-    TextureObject* obj = _head;
+    Texture::TextureObject* obj = _head;
     while(obj!=NULL)
     {
         ++num;
@@ -948,8 +957,8 @@ unsigned int Texture::TextureObjectSet::computeNumTextureObjectsInList() const
 }
 
 
-Texture::TextureObjectManager::TextureObjectManager(unsigned int contextID):
-    _contextID(contextID),
+TextureObjectManager::TextureObjectManager(unsigned int contextID):
+    GraphicsObjectManager("TextureObjectManager", contextID),
     _numActiveTextureObjects(0),
     _numOrphanedTextureObjects(0),
     _currTexturePoolSize(0),
@@ -959,13 +968,16 @@ Texture::TextureObjectManager::TextureObjectManager(unsigned int contextID):
     _numDeleted(0),
     _deleteTime(0.0),
     _numGenerated(0),
-    _generateTime(0.0),
-    _numApplied(0),
-    _applyTime(0.0)
+    _generateTime(0.0)
 {
 }
 
-void Texture::TextureObjectManager::setMaxTexturePoolSize(unsigned int size)
+TextureObjectManager::~TextureObjectManager()
+{
+}
+
+
+void TextureObjectManager::setMaxTexturePoolSize(unsigned int size)
 {
     if (_maxTexturePoolSize == size) return;
 
@@ -977,7 +989,7 @@ void Texture::TextureObjectManager::setMaxTexturePoolSize(unsigned int size)
     _maxTexturePoolSize = size;
 }
 
-bool Texture::TextureObjectManager::makeSpace(unsigned int size)
+bool TextureObjectManager::makeSpace(unsigned int size)
 {
     for(TextureSetMap::iterator itr = _textureSetMap.begin();
         itr != _textureSetMap.end() && size>0;
@@ -990,12 +1002,12 @@ bool Texture::TextureObjectManager::makeSpace(unsigned int size)
 }
 
 
-Texture::TextureObject* Texture::TextureObjectManager::generateTextureObject(const Texture* texture, GLenum target)
+osg::ref_ptr<Texture::TextureObject> TextureObjectManager::generateTextureObject(const Texture* texture, GLenum target)
 {
     return generateTextureObject(texture, target, 0, 0, 0, 0, 0, 0);
 }
 
-Texture::TextureObject* Texture::TextureObjectManager::generateTextureObject(const Texture* texture,
+osg::ref_ptr<Texture::TextureObject> TextureObjectManager::generateTextureObject(const Texture* texture,
                                              GLenum    target,
                                              GLint     numMipmapLevels,
                                              GLenum    internalFormat,
@@ -1012,14 +1024,34 @@ Texture::TextureObject* Texture::TextureObjectManager::generateTextureObject(con
     return tos->takeOrGenerate(const_cast<Texture*>(texture));
 }
 
-Texture::TextureObjectSet* Texture::TextureObjectManager::getTextureObjectSet(const TextureProfile& profile)
+Texture::TextureObject* Texture::generateAndAssignTextureObject(unsigned int contextID, GLenum target) const
 {
-    osg::ref_ptr<Texture::TextureObjectSet>& tos = _textureSetMap[profile];
-    if (!tos) tos = new Texture::TextureObjectSet(this, profile);
+    _textureObjectBuffer[contextID] = generateTextureObject(this, contextID, target);
+    return _textureObjectBuffer[contextID].get();
+}
+
+Texture::TextureObject* Texture::generateAndAssignTextureObject(
+                                             unsigned int contextID,
+                                             GLenum    target,
+                                             GLint     numMipmapLevels,
+                                             GLenum    internalFormat,
+                                             GLsizei   width,
+                                             GLsizei   height,
+                                             GLsizei   depth,
+                                             GLint     border) const
+{
+    _textureObjectBuffer[contextID] = generateTextureObject(this, contextID, target, numMipmapLevels, internalFormat, width, height, depth, border);
+    return _textureObjectBuffer[contextID].get();
+}
+
+TextureObjectSet* TextureObjectManager::getTextureObjectSet(const Texture::TextureProfile& profile)
+{
+    osg::ref_ptr<TextureObjectSet>& tos = _textureSetMap[profile];
+    if (!tos) tos = new TextureObjectSet(this, profile);
     return tos.get();
 }
 
-void Texture::TextureObjectManager::handlePendingOrphandedTextureObjects()
+void TextureObjectManager::handlePendingOrphandedTextureObjects()
 {
     for(TextureSetMap::iterator itr = _textureSetMap.begin();
         itr != _textureSetMap.end();
@@ -1029,12 +1061,8 @@ void Texture::TextureObjectManager::handlePendingOrphandedTextureObjects()
     }
 }
 
-void Texture::TextureObjectManager::deleteAllTextureObjects()
+void TextureObjectManager::deleteAllGLObjects()
 {
-    // OSG_NOTICE<<"Texture::TextureObjectManager::deleteAllTextureObjects() _contextID="<<_contextID<<std::endl;
-
-    ElapsedTime elapsedTime(&(getDeleteTime()));
-
     for(TextureSetMap::iterator itr = _textureSetMap.begin();
         itr != _textureSetMap.end();
         ++itr)
@@ -1043,10 +1071,8 @@ void Texture::TextureObjectManager::deleteAllTextureObjects()
     }
 }
 
-void Texture::TextureObjectManager::discardAllTextureObjects()
+void TextureObjectManager::discardAllGLObjects()
 {
-    // OSG_NOTICE<<"Texture::TextureObjectManager::discardAllTextureObjects() _contextID="<<_contextID<<" _numActiveTextureObjects="<<_numActiveTextureObjects<<std::endl;
-
     for(TextureSetMap::iterator itr = _textureSetMap.begin();
         itr != _textureSetMap.end();
         ++itr)
@@ -1055,12 +1081,8 @@ void Texture::TextureObjectManager::discardAllTextureObjects()
     }
 }
 
-void Texture::TextureObjectManager::flushAllDeletedTextureObjects()
+void TextureObjectManager::flushAllDeletedGLObjects()
 {
-    // OSG_NOTICE<<"Texture::TextureObjectManager::flushAllDeletedTextureObjects() _contextID="<<_contextID<<std::endl;
-
-    ElapsedTime elapsedTime(&(getDeleteTime()));
-
     for(TextureSetMap::iterator itr = _textureSetMap.begin();
         itr != _textureSetMap.end();
         ++itr)
@@ -1069,10 +1091,8 @@ void Texture::TextureObjectManager::flushAllDeletedTextureObjects()
     }
 }
 
-void Texture::TextureObjectManager::discardAllDeletedTextureObjects()
+void TextureObjectManager::discardAllDeletedGLObjects()
 {
-    // OSG_NOTICE<<"Texture::TextureObjectManager::discardAllDeletedTextureObjects() _contextID="<<_contextID<<" _numActiveTextureObjects="<<_numActiveTextureObjects<<std::endl;
-
     for(TextureSetMap::iterator itr = _textureSetMap.begin();
         itr != _textureSetMap.end();
         ++itr)
@@ -1081,10 +1101,8 @@ void Texture::TextureObjectManager::discardAllDeletedTextureObjects()
     }
 }
 
-void Texture::TextureObjectManager::flushDeletedTextureObjects(double currentTime, double& availableTime)
+void TextureObjectManager::flushDeletedGLObjects(double currentTime, double& availableTime)
 {
-    ElapsedTime elapsedTime(&(getDeleteTime()));
-
     for(TextureSetMap::iterator itr = _textureSetMap.begin();
         (itr != _textureSetMap.end()) && (availableTime > 0.0);
         ++itr)
@@ -1093,14 +1111,7 @@ void Texture::TextureObjectManager::flushDeletedTextureObjects(double currentTim
     }
 }
 
-void Texture::TextureObjectManager::releaseTextureObject(Texture::TextureObject* to)
-{
-    if (to->_set) to->_set->orphan(to);
-    else OSG_NOTICE<<"TextureObjectManager::releaseTextureObject(Texture::TextureObject* to) Not implemented yet"<<std::endl;
-}
-
-
-void Texture::TextureObjectManager::newFrame(osg::FrameStamp* fs)
+void TextureObjectManager::newFrame(osg::FrameStamp* fs)
 {
     if (fs) _frameNumber = fs->getFrameNumber();
     else ++_frameNumber;
@@ -1108,19 +1119,18 @@ void Texture::TextureObjectManager::newFrame(osg::FrameStamp* fs)
     ++_numFrames;
 }
 
-void Texture::TextureObjectManager::reportStats(std::ostream& out)
+void TextureObjectManager::reportStats(std::ostream& out)
 {
     double numFrames(_numFrames==0 ? 1.0 : _numFrames);
     out<<"TextureObjectMananger::reportStats()"<<std::endl;
     out<<"   total _numOfTextureObjects="<<_numActiveTextureObjects<<", _numOrphanedTextureObjects="<<_numOrphanedTextureObjects<<" _currTexturePoolSize="<<_currTexturePoolSize<<std::endl;
     out<<"   total _numGenerated="<<_numGenerated<<", _generateTime="<<_generateTime<<", averagePerFrame="<<_generateTime/numFrames*1000.0<<"ms"<<std::endl;
     out<<"   total _numDeleted="<<_numDeleted<<", _deleteTime="<<_deleteTime<<", averagePerFrame="<<_deleteTime/numFrames*1000.0<<"ms"<<std::endl;
-    out<<"   total _numApplied="<<_numApplied<<", _applyTime="<<_applyTime<<", averagePerFrame="<<_applyTime/numFrames*1000.0<<"ms"<<std::endl;
     out<<"   getMaxTexturePoolSize()="<<getMaxTexturePoolSize()<<" current/max size = "<<double(_currTexturePoolSize)/double(getMaxTexturePoolSize())<<std::endl;
     recomputeStats(out);
 }
 
-void Texture::TextureObjectManager::resetStats()
+void TextureObjectManager::resetStats()
 {
     _numFrames = 0;
     _numDeleted = 0;
@@ -1128,15 +1138,12 @@ void Texture::TextureObjectManager::resetStats()
 
     _numGenerated = 0;
     _generateTime = 0;
-
-    _numApplied = 0;
-    _applyTime = 0;
 }
 
 
-void Texture::TextureObjectManager::recomputeStats(std::ostream& out) const
+void TextureObjectManager::recomputeStats(std::ostream& out) const
 {
-    out<<"Texture::TextureObjectManager::recomputeStats()"<<std::endl;
+    out<<"TextureObjectManager::recomputeStats()"<<std::endl;
     unsigned int numObjectsInLists = 0;
     unsigned int numActive = 0;
     unsigned int numOrphans = 0;
@@ -1164,7 +1171,7 @@ void Texture::TextureObjectManager::recomputeStats(std::ostream& out) const
     if (currentSize != _currTexturePoolSize) out<<"   WARNING: _currTexturePoolSize("<<_currTexturePoolSize<<") != currentSize, delta = "<<int(_currTexturePoolSize)-int(currentSize)<<std::endl;
 }
 
-bool Texture::TextureObjectManager::checkConsistency() const
+bool TextureObjectManager::checkConsistency() const
 {
     unsigned int numObjectsInLists = 0;
     unsigned int numActive = 0;
@@ -1187,28 +1194,18 @@ bool Texture::TextureObjectManager::checkConsistency() const
     {
         recomputeStats(osg::notify(osg::NOTICE));
 
-        throw "Texture::TextureObjectManager::checkConsistency()  sizes inconsistent";
+        throw "TextureObjectManager::checkConsistency()  sizes inconsistent";
         return false;
     }
     return true;
 }
 
-
-osg::ref_ptr<Texture::TextureObjectManager>& Texture::getTextureObjectManager(unsigned int contextID)
+osg::ref_ptr<Texture::TextureObject> Texture::generateTextureObject(const Texture* texture, unsigned int contextID, GLenum target)
 {
-    typedef osg::buffered_object< ref_ptr<Texture::TextureObjectManager> > TextureObjectManagerBuffer;
-    static TextureObjectManagerBuffer s_TextureObjectManager;
-    if (!s_TextureObjectManager[contextID]) s_TextureObjectManager[contextID] = new Texture::TextureObjectManager(contextID);
-    return s_TextureObjectManager[contextID];
+    return osg::get<TextureObjectManager>(contextID)->generateTextureObject(texture, target);
 }
 
-
-Texture::TextureObject* Texture::generateTextureObject(const Texture* texture, unsigned int contextID, GLenum target)
-{
-    return getTextureObjectManager(contextID)->generateTextureObject(texture, target);
-}
-
-Texture::TextureObject* Texture::generateTextureObject(const Texture* texture, unsigned int contextID,
+osg::ref_ptr<Texture::TextureObject> Texture::generateTextureObject(const Texture* texture, unsigned int contextID,
                                              GLenum    target,
                                              GLint     numMipmapLevels,
                                              GLenum    internalFormat,
@@ -1217,37 +1214,7 @@ Texture::TextureObject* Texture::generateTextureObject(const Texture* texture, u
                                              GLsizei   depth,
                                              GLint     border)
 {
-    return getTextureObjectManager(contextID)->generateTextureObject(texture,target,numMipmapLevels,internalFormat,width,height,depth,border);
-}
-
-void Texture::deleteAllTextureObjects(unsigned int contextID)
-{
-    getTextureObjectManager(contextID)->deleteAllTextureObjects();
-}
-
-void Texture::discardAllTextureObjects(unsigned int contextID)
-{
-    getTextureObjectManager(contextID)->discardAllTextureObjects();
-}
-
-void Texture::flushAllDeletedTextureObjects(unsigned int contextID)
-{
-    getTextureObjectManager(contextID)->flushAllDeletedTextureObjects();
-}
-
-void Texture::discardAllDeletedTextureObjects(unsigned int contextID)
-{
-    getTextureObjectManager(contextID)->discardAllDeletedTextureObjects();
-}
-
-void Texture::flushDeletedTextureObjects(unsigned int contextID,double currentTime, double& availbleTime)
-{
-    getTextureObjectManager(contextID)->flushDeletedTextureObjects(currentTime, availbleTime);
-}
-
-void Texture::releaseTextureObject(unsigned int contextID, Texture::TextureObject* to)
-{
-    getTextureObjectManager(contextID)->releaseTextureObject(to);
+    return osg::get<TextureObjectManager>(contextID)->generateTextureObject(texture,target,numMipmapLevels,internalFormat,width,height,depth,border);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1433,7 +1400,7 @@ void Texture::dirtyTextureObject()
     {
         if (_textureObjectBuffer[i].valid())
         {
-            Texture::releaseTextureObject(i, _textureObjectBuffer[i].get());
+            _textureObjectBuffer[i]->release();
             _textureObjectBuffer[i] = 0;
         }
     }
@@ -2679,7 +2646,8 @@ bool Texture::isHardwareMipmapGenerationEnabled(const State& state) const
             return true;
         }
 
-        if (extensions->glGenerateMipmap)
+        // FrameBufferObjects are required for glGenerateMipmap
+        if (extensions->isFrameBufferObjectSupported && extensions->glGenerateMipmap)
         {
             return true;
         }
@@ -2697,7 +2665,7 @@ Texture::GenerateMipmapMode Texture::mipmapBeforeTexImage(const State& state, bo
 #else
 
         const GLExtensions* extensions = state.get<GLExtensions>();
-        bool useGenerateMipMap = extensions->glGenerateMipmap!=0;
+        bool useGenerateMipMap = extensions->isFrameBufferObjectSupported && extensions->glGenerateMipmap;
 
         if (useGenerateMipMap)
         {
@@ -2768,8 +2736,8 @@ void Texture::generateMipmap(State& state) const
     // get fbo extension which provides us with the glGenerateMipmapEXT function
     osg::GLExtensions* ext = state.get<GLExtensions>();
 
-    // check if the function is supported
-    if (ext->glGenerateMipmap)
+    // FrameBufferObjects are required for glGenerateMipmap
+    if (ext->isFrameBufferObjectSupported && ext->glGenerateMipmap)
     {
         textureObject->bind();
         ext->glGenerateMipmap(textureObject->target());
@@ -2808,7 +2776,7 @@ void Texture::releaseGLObjects(State* state) const
         unsigned int contextID = state->getContextID();
         if (_textureObjectBuffer[contextID].valid())
         {
-            Texture::releaseTextureObject(contextID, _textureObjectBuffer[contextID].get());
+            _textureObjectBuffer[contextID]->release();
 
             _textureObjectBuffer[contextID] = 0;
         }

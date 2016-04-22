@@ -563,8 +563,8 @@ public:
             is >> hasObject;
             if ( hasObject )
             {
-                P* value = dynamic_cast<P*>( is.readObject() );
-                (object.*_setter)( value );
+                osg::ref_ptr<P> value = is.readObjectOfType<P>();
+                (object.*_setter)( value.get() );
             }
         }
         else if ( is.matchString(ParentType::_name) )
@@ -573,8 +573,8 @@ public:
             if ( hasObject )
             {
                 is >> is.BEGIN_BRACKET;
-                P* value = dynamic_cast<P*>( is.readObject() );
-                (object.*_setter)( value );
+                osg::ref_ptr<P> value = is.readObjectOfType<P>();
+                (object.*_setter)( value.get() );
                 is >> is.END_BRACKET;
             }
         }
@@ -639,7 +639,8 @@ public:
             is >> hasObject;
             if ( hasObject )
             {
-                P* value = dynamic_cast<P*>( is.readImage() );
+                osg::ref_ptr<osg::Image> image = is.readImage();
+                P* value = dynamic_cast<P*>( image.get() );
                 (object.*_setter)( value );
             }
         }
@@ -649,7 +650,8 @@ public:
             if ( hasObject )
             {
                 is >> is.BEGIN_BRACKET;
-                P* value = dynamic_cast<P*>( is.readImage() );
+                osg::ref_ptr<osg::Image> image = is.readImage();
+                P* value = dynamic_cast<P*>( image.get() );
                 (object.*_setter)( value );
                 is >> is.END_BRACKET;
             }
@@ -1452,8 +1454,11 @@ public:
         C& object = OBJECT_CAST<C&>(obj);
         if ( is.isBinary() )
         {
-            bool ok = false; is >> ok; //code from user serialized ensuring backwards-compatibility
-            if ( !ok ) return true;
+            if (is.getFileVersion()<123)
+            {
+                bool ok = false; is >> ok; //code from user serialized ensuring backwards-compatibility
+                if ( !ok ) return true;
+            }
 
             P mask;
             is >> mask;
@@ -1482,9 +1487,12 @@ public:
         bool ok = ParentType::_defaultValue!=static_cast<P>(mask);
         if ( os.isBinary() )
         {
-            os << ok;
-            if ( !ok )
-                return true;
+            if (os.getFileVersion()<123)
+            {
+                os << ok;
+                if ( !ok )
+                    return true;
+            }
             os << (int)mask; //just write int value in binary case
         }
         else
@@ -1839,8 +1847,19 @@ protected:
 #define END_ENUM_SERIALIZER() \
     wrapper->addSerializer(serializer.get(), osgDB::BaseSerializer::RW_ENUM); }
 
+/** defaults to uint bitfield type.*/
 #define BEGIN_BITFLAGS_SERIALIZER(PROP, DEF) \
     { typedef osgDB::BitFlagsSerializer<MyClass> MySerializer; \
+    osg::ref_ptr<MySerializer> serializer = new MySerializer( \
+    #PROP, DEF, &MyClass::get##PROP, &MyClass::set##PROP)
+
+#define BEGIN_UINT_BITFLAGS_SERIALIZER(PROP, DEF) \
+    { typedef osgDB::BitFlagsSerializer<MyClass, unsigned int> MySerializer; \
+    osg::ref_ptr<MySerializer> serializer = new MySerializer( \
+    #PROP, DEF, &MyClass::get##PROP, &MyClass::set##PROP)
+
+#define BEGIN_INT_BITFLAGS_SERIALIZER(PROP, DEF) \
+    { typedef osgDB::BitFlagsSerializer<MyClass, int> MySerializer; \
     osg::ref_ptr<MySerializer> serializer = new MySerializer( \
     #PROP, DEF, &MyClass::get##PROP, &MyClass::set##PROP)
 

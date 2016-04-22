@@ -134,10 +134,6 @@ void Texture1D::apply(State& state) const
     // current OpenGL context.
     const unsigned int contextID = state.getContextID();
 
-    Texture::TextureObjectManager* tom = Texture::getTextureObjectManager(contextID).get();
-    ElapsedTime elapsedTime(&(tom->getApplyTime()));
-    tom->getNumberApplied()++;
-
     // get the texture object for the current contextID.
     TextureObject* textureObject = getTextureObject(contextID);
 
@@ -153,7 +149,7 @@ void Texture1D::apply(State& state) const
 
             if (!textureObject->match(GL_TEXTURE_1D, new_numMipmapLevels, _internalFormat, new_width, 1, 1, _borderWidth))
             {
-                Texture::releaseTextureObject(contextID, _textureObjectBuffer[contextID].get());
+                _textureObjectBuffer[contextID]->release();
                 _textureObjectBuffer[contextID] = 0;
                 textureObject = 0;
             }
@@ -174,7 +170,7 @@ void Texture1D::apply(State& state) const
         {
             applyTexImage1D(GL_TEXTURE_1D,_image.get(),state, _textureWidth, _numMipmapLevels);
 
-            // update the modified count to show that it is upto date.
+            // update the modified count to show that it is up to date.
             getModifiedCount(contextID) = _image->getModifiedCount();
         }
 
@@ -183,7 +179,7 @@ void Texture1D::apply(State& state) const
     {
 
         // we don't have a applyTexImage1D_subload yet so can't reuse.. so just generate a new texture object.
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(this, contextID, GL_TEXTURE_1D);
+        textureObject = generateAndAssignTextureObject(contextID, GL_TEXTURE_1D);
 
         textureObject->bind();
 
@@ -204,7 +200,7 @@ void Texture1D::apply(State& state) const
     {
 
         // we don't have a applyTexImage1D_subload yet so can't reuse.. so just generate a new texture object.
-        textureObject = generateTextureObject(this, contextID,GL_TEXTURE_1D);
+        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_1D);
 
         textureObject->bind();
 
@@ -229,8 +225,7 @@ void Texture1D::apply(State& state) const
     }
     else if ( (_textureWidth!=0) && (_internalFormat!=0) )
     {
-        _textureObjectBuffer[contextID] = textureObject = generateTextureObject(
-                this,contextID,GL_TEXTURE_1D,_numMipmapLevels,_internalFormat,_textureWidth,1,1,0);
+        textureObject = generateAndAssignTextureObject(contextID, GL_TEXTURE_1D,_numMipmapLevels,_internalFormat,_textureWidth,1,1,0);
 
         textureObject->bind();
 
@@ -418,7 +413,7 @@ void Texture1D::copyTexImage1D(State& state, int x, int y, int width)
     _min_filter = LINEAR;
     _mag_filter = LINEAR;
 
-    _textureObjectBuffer[contextID] = textureObject = generateTextureObject(this, contextID,GL_TEXTURE_1D);
+    textureObject = generateAndAssignTextureObject(contextID, GL_TEXTURE_1D);
 
     textureObject->bind();
 

@@ -46,6 +46,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Capability
     ${HEADER_PATH}/ClampColor
     ${HEADER_PATH}/ClearNode
+    ${HEADER_PATH}/ClipControl
     ${HEADER_PATH}/ClipNode
     ${HEADER_PATH}/ClipPlane
     ${HEADER_PATH}/ClusterCullingCallback
@@ -54,6 +55,7 @@ SET(TARGET_H
     ${HEADER_PATH}/ColorMaski
     ${HEADER_PATH}/ColorMatrix
     ${HEADER_PATH}/ComputeBoundsVisitor
+    ${HEADER_PATH}/ContextData
     ${HEADER_PATH}/ConvexPlanarOccluder
     ${HEADER_PATH}/ConvexPlanarPolygon
     ${HEADER_PATH}/CoordinateSystemNode
@@ -88,6 +90,7 @@ SET(TARGET_H
     ${HEADER_PATH}/GraphicsThread
     ${HEADER_PATH}/Group
     ${HEADER_PATH}/Hint
+    ${HEADER_PATH}/Identifier
     ${HEADER_PATH}/Image
     ${HEADER_PATH}/ImageSequence
     ${HEADER_PATH}/ImageStream
@@ -181,9 +184,13 @@ SET(TARGET_H
     ${HEADER_PATH}/Transform
     ${HEADER_PATH}/TriangleFunctor
     ${HEADER_PATH}/TriangleIndexFunctor
+    ${HEADER_PATH}/TriangleLinePointIndexFunctor
+    ${HEADER_PATH}/Types
     ${HEADER_PATH}/Uniform
     ${HEADER_PATH}/UserDataContainer
     ${HEADER_PATH}/ValueObject
+    ${HEADER_PATH}/ValueMap
+    ${HEADER_PATH}/ValueStack
     ${HEADER_PATH}/Vec2
     ${HEADER_PATH}/Vec2b
     ${HEADER_PATH}/Vec2d
@@ -246,6 +253,7 @@ SET(TARGET_SRC
     CameraView.cpp
     ClampColor.cpp
     ClearNode.cpp
+    ClipControl.cpp
     ClipNode.cpp
     ClipPlane.cpp
     ClusterCullingCallback.cpp
@@ -254,6 +262,7 @@ SET(TARGET_SRC
     ColorMaski.cpp
     ColorMatrix.cpp
     ComputeBoundsVisitor.cpp
+    ContextData.cpp
     ConvexPlanarOccluder.cpp
     ConvexPlanarPolygon.cpp
     CoordinateSystemNode.cpp
@@ -286,6 +295,7 @@ SET(TARGET_SRC
     GraphicsThread.cpp
     Group.cpp
     Hint.cpp
+    Identifier.cpp
     Image.cpp
     ImageSequence.cpp
     ImageStream.cpp
@@ -371,6 +381,8 @@ SET(TARGET_SRC
     Transform.cpp
     Uniform.cpp
     UserDataContainer.cpp
+    ValueMap.cpp
+    ValueStack.cpp
     Version.cpp
     VertexAttribDivisor.cpp
     VertexProgram.cpp

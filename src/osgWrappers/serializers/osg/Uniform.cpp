@@ -13,17 +13,17 @@ static bool readElements( osgDB::InputStream& is, osg::Uniform& uniform )
     bool hasArray; is >> hasArray;
     if ( hasArray )
     {
-        osg::Array* array = is.readArray();
+        osg::ref_ptr<osg::Array> array = is.readArray();
         switch ( array->getType() )
         {
         case osg::Array::FloatArrayType:
-            uniform.setArray( static_cast<osg::FloatArray*>(array) ); break;
+            uniform.setArray( static_cast<osg::FloatArray*>(array.get()) ); break;
         case osg::Array::DoubleArrayType:
-            uniform.setArray( static_cast<osg::DoubleArray*>(array) ); break;
+            uniform.setArray( static_cast<osg::DoubleArray*>(array.get()) ); break;
         case osg::Array::IntArrayType:
-            uniform.setArray( static_cast<osg::IntArray*>(array) ); break;
+            uniform.setArray( static_cast<osg::IntArray*>(array.get()) ); break;
         case osg::Array::UIntArrayType:
-            uniform.setArray( static_cast<osg::UIntArray*>(array) ); break;
+            uniform.setArray( static_cast<osg::UIntArray*>(array.get()) ); break;
         default: break;
         }
     }
@@ -190,6 +190,6 @@ REGISTER_OBJECT_WRAPPER( Uniform,
 
     ADD_UINT_SERIALIZER( NumElements, 0 );  // _numElements
     ADD_USER_SERIALIZER( Elements );  // _floatArray, _doubleArray, _intArray, _uintArray
-    ADD_OBJECT_SERIALIZER( UpdateCallback, osg::Uniform::Callback, NULL );  // _updateCallback
-    ADD_OBJECT_SERIALIZER( EventCallback, osg::Uniform::Callback, NULL );  // _eventCallback
+    ADD_OBJECT_SERIALIZER( UpdateCallback, osg::UniformCallback, NULL );  // _updateCallback
+    ADD_OBJECT_SERIALIZER( EventCallback, osg::UniformCallback, NULL );  // _eventCallback
 }

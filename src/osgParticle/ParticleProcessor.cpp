@@ -47,14 +47,15 @@ osgParticle::ParticleProcessor::ParticleProcessor(const ParticleProcessor& copy,
     _lifeTime(copy._lifeTime),
     _startTime(copy._startTime),
     _currentTime(copy._currentTime),
-    _resetTime(copy._resetTime)
+    _resetTime(copy._resetTime),
+    _frameNumber(copy._frameNumber)
 {
 }
 
 void osgParticle::ParticleProcessor::traverse(osg::NodeVisitor& nv)
 {
     // typecast the NodeVisitor to CullVisitor
-    osgUtil::CullVisitor* cv = dynamic_cast<osgUtil::CullVisitor*>(&nv);
+    osgUtil::CullVisitor* cv = nv.asCullVisitor();
 
     // continue only if the visitor actually is a cull visitor
     if (cv) {
@@ -98,10 +99,12 @@ void osgParticle::ParticleProcessor::traverse(osg::NodeVisitor& nv)
                         _currentTime += t - _t0;
 
                         // process only if the particle system is not frozen/culled
+                        // We need to allow at least 2 frames difference, because the particle system's lastFrameNumber
+                        // is updated in the draw thread which may not have completed yet.
                         if (alive &&
                             _enabled &&
                             !_ps->isFrozen() &&
-                            ((_ps->getLastFrameNumber()+1) >= (nv.getFrameStamp()->getFrameNumber()) || !_ps->getFreezeOnCull()))
+                            (!_ps->getFreezeOnCull() || ((nv.getFrameStamp()->getFrameNumber()-_ps->getLastFrameNumber()) <= 2)) )
                         {
                             // initialize matrix flags
                             _need_ltw_matrix = true;

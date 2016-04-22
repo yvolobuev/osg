@@ -306,6 +306,7 @@ class TestSupportOperation: public osg::GraphicsOperation
 public:
 
     TestSupportOperation():
+        osg::Referenced(true),
         osg::GraphicsOperation("TestSupportOperation",false),
         supported(true),
         errorMessage(),
@@ -474,7 +475,7 @@ int main( int argc, char **argv )
     std::string tranferFunctionFile;
     while (arguments.read("--tf",tranferFunctionFile))
     {
-        transferFunction = osgDB::readFile<osg::TransferFunction1D>(tranferFunctionFile);
+        transferFunction = osgDB::readRefFile<osg::TransferFunction1D>(tranferFunctionFile);
     }
 
     while(arguments.read("--test"))
@@ -596,7 +597,7 @@ int main( int argc, char **argv )
     osg::ref_ptr<osg::Group> models;
     while(arguments.read("--model",filename))
     {
-        osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(filename);
+        osg::ref_ptr<osg::Node> model = osgDB::readRefNodeFile(filename);
         if (model.valid())
         {
             if (!models) models = new osg::Group;
@@ -607,7 +608,7 @@ int main( int argc, char **argv )
     osg::ref_ptr<osg::Group> hulls;
     while(arguments.read("--hull",filename))
     {
-        osg::ref_ptr<osg::Node> hull = osgDB::readNodeFile(filename);
+        osg::ref_ptr<osg::Node> hull = osgDB::readRefNodeFile(filename);
         if (hull.valid())
         {
             if (!hulls) hulls = new osg::Group;
@@ -712,7 +713,7 @@ int main( int argc, char **argv )
                 osgDB::DirectoryContents contents = osgDB::expandWildcardsInFilename(arg);
                 for (unsigned int i = 0; i < contents.size(); ++i)
                 {
-                    osg::Image *image = osgDB::readImageFile( contents[i] );
+                    osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile( contents[i] );
 
                     if(image)
                     {
@@ -724,7 +725,7 @@ int main( int argc, char **argv )
             else
             {
                 // not an option so assume string is a filename.
-                osg::Image *image = osgDB::readImageFile( arguments[pos] );
+                osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile( arguments[pos] );
 
                 if(image)
                 {
@@ -769,7 +770,7 @@ int main( int argc, char **argv )
             if (osgDB::getLowerCaseFileExtension(filename)=="dicom")
             {
                 // not an option so assume string is a filename.
-                osg::Image* image = osgDB::readImageFile(filename);
+                osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile(filename);
                 if (image)
                 {
                     images.push_back(image);
@@ -786,13 +787,13 @@ int main( int argc, char **argv )
 
                 if (fileType == osgDB::DIRECTORY)
                 {
-                    osg::Image* image = osgDB::readImageFile(filename+".dicom");
+                    osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile(filename+".dicom");
                     if (image) images.push_back(image);
                 }
                 else if (fileType == osgDB::REGULAR_FILE)
                 {
                     // not an option so assume string is a filename.
-                    osg::Image* image = osgDB::readImageFile( filename );
+                    osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile( filename );
                     if (image) images.push_back(image);
                 }
                 else
@@ -1224,7 +1225,7 @@ int main( int argc, char **argv )
         // set the scene to render
         viewer.setSceneData(loadedModel.get());
 
-        // the the viewers main frame loop
+        // the viewers main frame loop
         viewer.run();
     }
 

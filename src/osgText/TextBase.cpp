@@ -105,12 +105,17 @@ void TextBase::setFont(const std::string& fontfile)
 
 void TextBase::setFontResolution(unsigned int width, unsigned int height)
 {
-    _fontSize = FontResolution(width,height);
+    FontResolution size(width,height);
+    if (_fontSize==size) return;
+
+    _fontSize = size;
     computeGlyphRepresentation();
 }
 
 void TextBase::setCharacterSize(float height)
 {
+    if (_characterHeight==height) return;
+
     _characterHeight = height;
     computeGlyphRepresentation();
 }
@@ -126,18 +131,24 @@ void TextBase::setCharacterSize(float height, float aspectRatio)
 
 void TextBase::setMaximumWidth(float maximumWidth)
 {
+    if (_maximumWidth==maximumWidth) return;
+
     _maximumWidth = maximumWidth;
     computeGlyphRepresentation();
 }
 
 void  TextBase::setMaximumHeight(float maximumHeight)
 {
+    if (_maximumHeight==maximumHeight) return;
+
     _maximumHeight = maximumHeight;
     computeGlyphRepresentation();
 }
 
 void TextBase::setLineSpacing(float lineSpacing)
 {
+    if (_lineSpacing==lineSpacing) return;
+
     _lineSpacing = lineSpacing;
     computeGlyphRepresentation();
 }
@@ -430,7 +441,7 @@ void TextBase::positionCursor(const osg::Vec2 & endOfLine_coords, osg::Vec2 & cu
             switch (_alignment)
             {
                 // TODO: current behaviour top baselines lined up in both cases - need to implement
-                //       top of characters aligment - Question is this neccesary?
+                //       top of characters aligment - Question is this necessary?
                 // ... otherwise, nothing to be done for these 6 cases
                 //case LEFT_TOP:
                 //case CENTER_TOP:

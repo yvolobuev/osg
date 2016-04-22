@@ -37,10 +37,21 @@ ShaderComposer::~ShaderComposer()
     OSG_INFO<<"ShaderComposer::~ShaderComposer() "<<this<<std::endl;
 }
 
-void ShaderComposer::releaseGLObjects(osg::State* state)
+void ShaderComposer::releaseGLObjects(osg::State* state) const
 {
-    _programMap.clear();
-    _shaderMainMap.clear();
+    for(ProgramMap::const_iterator itr = _programMap.begin();
+        itr != _programMap.end();
+        ++itr)
+    {
+        itr->second->releaseGLObjects(state);
+    }
+
+    for(ShaderMainMap::const_iterator itr = _shaderMainMap.begin();
+        itr != _shaderMainMap.end();
+        ++itr)
+    {
+        itr->second->releaseGLObjects(state);
+    }
 }
 
 osg::Program* ShaderComposer::getOrCreateProgram(const ShaderComponents& shaderComponents)
@@ -105,9 +116,19 @@ osg::Program* ShaderComposer::getOrCreateProgram(const ShaderComponents& shaderC
         addShaderToProgram(program.get(), vertexShaders);
     }
 
+     if (!tessControlShaders.empty())
+    {
+        addShaderToProgram(program.get(), tessControlShaders);
+    }
+
     if (!geometryShaders.empty())
     {
         addShaderToProgram(program.get(), geometryShaders);
+    }
+
+     if (!tessEvaluationShaders.empty())
+    {
+        addShaderToProgram(program.get(), tessEvaluationShaders);
     }
 
     if (!fragmentShaders.empty())

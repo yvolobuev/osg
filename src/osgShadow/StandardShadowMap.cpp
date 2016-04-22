@@ -365,6 +365,37 @@ StandardShadowMap::~StandardShadowMap(void)
 
 }
 
+void StandardShadowMap::resizeGLObjectBuffers(unsigned int maxSize)
+{
+    osg::resizeGLObjectBuffers(_mainVertexShader, maxSize);
+    osg::resizeGLObjectBuffers(_mainFragmentShader, maxSize);
+    osg::resizeGLObjectBuffers(_shadowVertexShader, maxSize);
+    osg::resizeGLObjectBuffers(_shadowFragmentShader, maxSize);
+
+    DebugShadowMap::resizeGLObjectBuffers(maxSize);
+}
+
+void StandardShadowMap::releaseGLObjects(osg::State* state) const
+{
+    osg::releaseGLObjects(_mainVertexShader, state);
+    osg::releaseGLObjects(_mainFragmentShader, state);
+    osg::releaseGLObjects(_shadowVertexShader, state);
+    osg::releaseGLObjects(_shadowFragmentShader, state);
+
+    DebugShadowMap::releaseGLObjects(state);
+}
+
+void StandardShadowMap::ViewData::resizeGLObjectBuffers(unsigned int maxSize)
+{
+    osg::resizeGLObjectBuffers(_stateset, maxSize);
+}
+
+void StandardShadowMap::ViewData::releaseGLObjects(osg::State* state) const
+{
+    osg::releaseGLObjects(_stateset, state);
+}
+
+
 void StandardShadowMap::updateTextureCoordIndices( unsigned int fromTextureCoordIndex, unsigned int toTextureCoordIndex )
 {
 
@@ -572,7 +603,7 @@ void StandardShadowMap::ViewData::init( ThisClass *st, osgUtil::CullVisitor *cv 
         stateset->setMode( GL_POLYGON_OFFSET_FILL,
               osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE );
 
-        // agressive optimization
+        // aggressive optimization
         stateset->setRenderBinDetails( 0, "RenderBin",
                             osg::StateSet::OVERRIDE_RENDERBIN_DETAILS );
 
@@ -582,7 +613,7 @@ void StandardShadowMap::ViewData::init( ThisClass *st, osgUtil::CullVisitor *cv 
         stateset->setAttributeAndModes
             ( new osg::AlphaFunc( osg::AlphaFunc::GREATER, 0 ), osg::StateAttribute::ON );
 
-        // agressive optimization
+        // aggressive optimization
         stateset->setAttributeAndModes
             ( new osg::ColorMask( false, false, false, false ),
             osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE );

@@ -36,7 +36,8 @@ struct Char3DInfo
         _maxX(-FLT_MAX),
         _minX(FLT_MAX),
         _minY(FLT_MAX),
-        _coord_scale(1.0/64.0)
+        _coord_scale(1.0/64.0),
+        _reverseFill(false)
     {
         _geometry->setVertexArray(_verts.get());
     }
@@ -49,6 +50,17 @@ struct Char3DInfo
     {
         if (_currentPrimitiveSet.valid() && _currentPrimitiveSet->size()>1)
         {
+            if (_reverseFill)
+            {
+                for ( int near = 0, far = _currentPrimitiveSet->size() - 1;
+                      near < far;
+                      near++, far--)
+                {
+                    std::swap((*_currentPrimitiveSet)[near],
+                              (*_currentPrimitiveSet)[far]);
+                }
+            }
+
             _geometry->addPrimitiveSet( _currentPrimitiveSet.get() );
         }
         _currentPrimitiveSet = 0;
@@ -168,7 +180,7 @@ struct Char3DInfo
     double                          _minX;
     double                          _minY;
     double                          _coord_scale;
-
+    bool                            _reverseFill;
 };
 
 
@@ -413,9 +425,11 @@ osgText::Glyph* FreeTypeFont::getGlyph(const osgText::FontResolution& fontRes, u
 
 }
 
-osgText::Glyph3D * FreeTypeFont::getGlyph3D(unsigned int charcode)
+osgText::Glyph3D * FreeTypeFont::getGlyph3D(const osgText::FontResolution& fontRes, unsigned int charcode)
 {
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(FreeTypeLibrary::instance()->getMutex());
+
+    setFontResolution(fontRes);
 
     //
     // GT: fix for symbol fonts (i.e. the Webdings font) as the wrong character are being
@@ -458,6 +472,9 @@ osgText::Glyph3D * FreeTypeFont::getGlyph3D(unsigned int charcode)
     funcs.move_to = (FT_Outline_MoveToFunc)&FreeType::moveTo;
     funcs.shift = 0;
     funcs.delta = 0;
+
+    FT_Orientation orientation = FT_Outline_Get_Orientation(&outline);
+    char3d._reverseFill = (orientation == FT_ORIENTATION_POSTSCRIPT);
 
     // ** record description
     FT_Error _error = FT_Outline_Decompose(&outline, &funcs, &char3d);
@@ -515,9 +532,11 @@ osgText::Glyph3D * FreeTypeFont::getGlyph3D(unsigned int charcode)
     return glyph.release();
 }
 
-osg::Vec2 FreeTypeFont::getKerning(unsigned int leftcharcode,unsigned int rightcharcode, osgText::KerningType kerningType)
+osg::Vec2 FreeTypeFont::getKerning(const osgText::FontResolution& fontRes, unsigned int leftcharcode, unsigned int rightcharcode, osgText::KerningType kerningType)
 {
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(FreeTypeLibrary::instance()->getMutex());
+
+    setFontResolution(fontRes);
 
     if (!FT_HAS_KERNING(_face) || (kerningType == osgText::KERNING_NONE)) return osg::Vec2(0.0f,0.0f);
 
